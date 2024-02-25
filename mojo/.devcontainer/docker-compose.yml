@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  mojo:
+    build:
+      context: .
+    env_file:
+      - ../../.env
+    volumes:
+      - ../..:/home/dev/repo
