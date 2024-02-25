@@ -69,7 +69,14 @@ def run_tests(solver: Callable, tests: list[tuple[str, Any]], part: int) -> None
     """Call solver with given tests and print results"""
     for n, (input, expected) in enumerate(tests):
         answer, ex_time = solve(solver, input)
-        result = f"{answer} == {expected} -- SUCCESS" if answer == expected else f"{answer} != {expected} -- FAILURE"
+
+        if expected is None:
+            result = f"{answer} -- SUCCESS"
+        elif answer == expected:
+            result = f"{answer} == {expected} -- SUCCESS"
+        else:
+            result = f"{answer} != {expected} -- FAILURE"
+
         print(f"Part {part} test {n + 1}: {result} ({ex_time})")
 
 
@@ -89,10 +96,10 @@ if __name__ == "__main__":
     pkg = import_module(f"{args.year}.day{args.day:02}")
 
     if args.test:
-        if args.part != 2:
+        if args.part != 2 and hasattr(pkg, "PART1_TESTS"):
             run_tests(pkg.part1, pkg.PART1_TESTS, 1)
 
-        if args.part != 1:
+        if args.part != 1 and hasattr(pkg, "PART2_TESTS"):
             run_tests(pkg.part2, pkg.PART2_TESTS, 2)
 
     else:
