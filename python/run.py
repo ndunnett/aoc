@@ -105,8 +105,8 @@ if __name__ == "__main__":
     else:
         input = load_input(args.year, args.day)
 
-        if args.part != 2:
+        if args.part != 2 and hasattr(pkg, "part1"):
             run_puzzle(pkg.part1, input, 1)
 
-        if args.part != 1:
+        if args.part != 1 and hasattr(pkg, "part2"):
             run_puzzle(pkg.part2, input, 2)
