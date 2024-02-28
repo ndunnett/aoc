@@ -175,9 +175,18 @@ def cli(input: list[str] | None = None) -> None:
                     print(f"Part {part} test {n + 1}: {result} ({ex_time})")
 
             if len(parts_found) == 0:
-                exit_error("No tests found. Tests must be defined in the puzzle module as "
-                           "\"PART1_TESTS\" or \"PART2_TESTS\" as a list of tuples with the test "
-                           "input as the first index, and the expected result as the second index.")
+                exit_error("No tests found. Tests must be defined in the puzzle module scope as "
+                           "\"PART1_TESTS\" or \"PART2_TESTS\", each as a list of tuples with the test "
+                           "input as the first element, and the expected result as the second element.\n\n"
+                           "Example:\n\n"
+                           "PART1_TEST = [\n"
+                           "    (<input1>, <result1>),\n"
+                           "    (<input2>, <result2>),\n"
+                           "]\n\n"
+                           "PART2_TEST = [\n"
+                           "    (<input1>, <result3>),\n"
+                           "    (<input2>, <result4>),\n"
+                           "]")
 
         # --run: run solvers for the puzzle on your input
         else:
@@ -194,7 +203,12 @@ def cli(input: list[str] | None = None) -> None:
 
             if len(parts_found) == 0:
                 exit_error("No solvers found. Solvers must be a callable defined in "
-                           "the module scope as \"part1\" or \"part2\".")
+                           "the puzzle module scope as \"part1\" or \"part2\".\n\n"
+                           "Example:\n\n"
+                           "def part1(<input>):\n"
+                           "    return <result1>\n\n"
+                           "def part2(<input>):\n"
+                           "    return <result2>")
 
 
 if __name__ == "__main__":
