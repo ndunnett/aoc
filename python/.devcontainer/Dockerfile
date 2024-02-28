@@ -6,9 +6,15 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y wget git zsh; \
     rm -rf /var/lib/apt/lists/*
+ARG USERNAME=dev
+
+# create shellscript to conveniently call AOC script runner
+RUN set -x; \
+    echo "#!/bin/sh" > /usr/local/bin/aoc; \
+    echo "python /home/$USERNAME/repo/python/run.py \$@" >> /usr/local/bin/aoc; \
+    chmod +x /usr/local/bin/aoc
 
 # create user
-ARG USERNAME=dev
 RUN set -eux; \
     useradd --create-home --user-group --no-log-init "$USERNAME"; \
     mkdir -p "/home/$USERNAME/repo"; \
