@@ -6,9 +6,13 @@ from time import time, perf_counter_ns
 from argparse import ArgumentParser, Namespace
 from webbrowser import open_new_tab
 from typing import Any, Callable
+from traceback import FrameSummary, format_list, format_exc, extract_tb
+import sys
+from pprint import pprint
 
 
-SOURCE_PATH = Path(__file__).resolve().parent
+FILE_PATH = Path(__file__).resolve()
+SOURCE_PATH = FILE_PATH.parent
 CACHE_PATH = SOURCE_PATH.parent / ".cache"
 AOC_SESSION = environ.get("AOC_SESSION")
 AOC_URL = "https://adventofcode.com"
@@ -36,8 +40,8 @@ class ArgParser(ArgumentParser):
 
 def exit_error(message: str, status: int = 1) -> None:
     """Print message out and exit with status code."""
-    print(message)
-    exit(status)
+    print(message, file=sys.stderr)
+    sys.exit(status)
 
 
 def download_input(year: int, day: int) -> str:
@@ -90,9 +94,21 @@ def format_perf_count(perf_count: int) -> str:
 
 def solve(solver: Callable, input: str, fast: bool = False) -> tuple[Any, str]:
     """Call solver repeatedly for a minimum duration, return the result and formatted median execution time."""
+
+    def _format_exception(e: Exception) -> str:
+        """Filter out calls from this file from the traceback"""
+        def f(fs: FrameSummary) -> bool: return FILE_PATH.as_posix() != fs.filename
+        tb = format_list(filter(f, extract_tb(e.__traceback__)))
+        exc = format_exc().splitlines()
+        return "".join([exc[0], "\n"] + tb + [exc[-1]])
+
     def _call() -> tuple[Any, int]:
-        s = perf_counter_ns()
-        return (solver(input), perf_counter_ns() - s)
+        """Call solver, catch and filter out exceptions"""
+        try:
+            s = perf_counter_ns()
+            return (solver(input), perf_counter_ns() - s)
+        except Exception as e:
+            exit_error(_format_exception(e))
 
     start = time()
     result, first_run = _call()
@@ -103,7 +119,8 @@ def solve(solver: Callable, input: str, fast: bool = False) -> tuple[Any, str]:
             res, perf_count = _call()
 
             if res != result:
-                raise Exception(f"Inconsistent solver results: {result} != {res}")
+                exit_error(f"Inconsistent solver results from {solver.__module__}.{solver.__name__}:\n"
+                           f"  {result} != {res}")
 
             perf_counts.append(perf_count)
 
