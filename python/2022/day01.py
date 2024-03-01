@@ -1,5 +1,5 @@
 def process(input: str) -> list[int]:
-    return sorted([sum(map(int, r.split("\n"))) for r in input.split("\n\n")], reverse=True)
+    return sorted([sum(map(int, r.splitlines())) for r in input.split("\n\n")], reverse=True)
 
 
 def part1(input: str) -> int:

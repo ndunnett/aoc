@@ -9,12 +9,11 @@ class Knot:
     x: int
     y: int
     visited: set[tuple[int, int]]
-    follower: Knot
+    follower: Knot | None
 
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-        self.visited = set((self.x, self.y))
+    def __init__(self, x: int, y: int):
+        self.x, self.y = x, y
+        self.visited = set((x, y))
         self.follower = None
 
     @property
@@ -22,19 +21,15 @@ class Knot:
         return self.follower.tail if self.follower else self
 
     def add_follower(self) -> None:
-        self.tail.follower = Knot()
+        self.tail.follower = Knot(self.x, self.y)
 
     def move(self, x: int, y: int) -> None:
         self.x += x
         self.y += y
 
         if self.follower:
-            if x:
-                while not (self.x - self.follower.x <= 1 and self.x - self.follower.x >= -1):
-                    self.follower.move(sign(self.x - self.follower.x), 0)
-            if y:
-                while not (self.y - self.follower.y <= 1 and self.y - self.follower.y >= -1):
-                    self.follower.move(0, sign(self.y - self.follower.y))
+            while not (-1 <= self.x - self.follower.x <= 1 and -1 <= self.y - self.follower.y <= 1):
+                self.follower.move(sign(self.x - self.follower.x), sign(self.y - self.follower.y))
         else:
             self.visited.add((self.x, self.y))
 
@@ -51,7 +46,7 @@ class Knot:
 
 
 def solve(lines: list[str], followers: int) -> int:
-    head = Knot()
+    head = Knot(0, 0)
 
     for _ in range(followers):
         head.add_follower()

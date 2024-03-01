@@ -63,19 +63,20 @@ def solve(stream: str, rocks: int) -> int:
 
 
 def part1(input: str) -> int:
-    return solve(input, 2022)
+    return solve(input.strip(), 2022)
 
 
 def part2(input: str) -> int:
+    stream = input.strip()
     rocks = 1000000000000
-    cycle_length = 5 * (len(input) + 1)
+    cycle_length = 5 * (len(stream) + 1)
 
     while True:
         height = 0
         diff = []
 
         for i in range(6):
-            new_height = solve(input, cycle_length * (i + 1))
+            new_height = solve(stream, cycle_length * (i + 1))
             diff.append(height - new_height)
             height = new_height
 
@@ -86,7 +87,7 @@ def part2(input: str) -> int:
 
     remainder = rocks % cycle_length
     number_of_cycles = (rocks - remainder) // cycle_length
-    return (solve(input, cycle_length * 2) - solve(input, cycle_length)) * number_of_cycles + solve(input, remainder)
+    return (solve(stream, cycle_length * 2) - solve(stream, cycle_length)) * number_of_cycles + solve(stream, remainder)
 
 
 TEST_INPUT = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"

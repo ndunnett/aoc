@@ -20,7 +20,7 @@ def cmp(left: list[Any] | int, right: list[Any] | int) -> bool:
 
 
 def part1(input: str) -> int:
-    pairs = [map(literal_eval, pair.split("\n")) for pair in input.split("\n\n")]
+    pairs = [map(literal_eval, pair.splitlines()) for pair in input.split("\n\n")]
     return sum(i + 1 for i, [left, right] in enumerate(pairs) if cmp(left, right))
 
 
