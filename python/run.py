@@ -58,7 +58,7 @@ def download_input(year: int, day: int) -> str:
 
     try:
         with urlopen(Request(url=url, headers=headers)) as response:
-            return response.read().decode("utf-8").strip()
+            return response.read().decode("utf-8")
     except Exception as e:
         exit_error(f"Failed to download input: {e}")
 
