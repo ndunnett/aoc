@@ -7,6 +7,7 @@ from argparse import ArgumentParser, Namespace
 from webbrowser import open_new_tab
 from typing import Any, Callable
 from traceback import FrameSummary, format_list, format_exc, extract_tb
+from subprocess import call
 import sys
 
 
@@ -15,6 +16,7 @@ SOURCE_PATH = FILE_PATH.parent
 CACHE_PATH = SOURCE_PATH.parent / ".cache"
 AOC_SESSION = environ.get("AOC_SESSION")
 AOC_URL = "https://adventofcode.com"
+TEMPLATE_PATH = SOURCE_PATH / "template.py"
 
 TIME_UNITS = {
     0: "ns",
@@ -79,6 +81,25 @@ def load_input(year: int, day: int) -> str:
             return str(file.read())
 
 
+def create_solution(year: int, day: int) -> None:
+    """Copy solution template into year/day file structure."""
+    year_path = SOURCE_PATH / f"{year}"
+    year_path.resolve().mkdir(parents=True, exist_ok=True)
+    file_path = year_path / f"day{day:02}.py"
+
+    if not TEMPLATE_PATH.is_file():
+        exit_error(f"Template not found: {TEMPLATE_PATH}")
+
+    if file_path.is_file():
+        overwrite = input(f"File already exists: {file_path}\nDo you wish to overwrite it? (yes/no)\n\n")
+        if not overwrite.upper() in ["Y", "YES"]:
+            return
+
+    with open(TEMPLATE_PATH, encoding="utf-8", mode="r") as template:
+        with open(file_path, encoding="utf-8", mode="w") as file:
+            file.write(str(template.read()))
+
+
 def format_perf_count(perf_count: int) -> str:
     """Format result from perf_counter_ns into a readable string with units."""
     time = float(perf_count)
@@ -137,6 +158,7 @@ def parse_args(input: list[str] | None) -> Namespace:
     actions.add_argument("-t", "--test", action="store_true", help="run solvers for the puzzle on test inputs")
     actions.add_argument("-i", "--input", action="store_true", help="print the puzzle input")
     actions.add_argument("-o", "--open", action="store_true", help="open the puzzle page in the browser")
+    actions.add_argument("-s", "--start", action="store_true", help="start a new solution for the puzzle")
     parser.add_argument("-f", "--fast", action="store_true", help="run each solver only once")
     parser._actions = parser._actions[1:] + parser._actions[0:1]  # hack to move [-h] to back of usage
     args = parser.parse_args(input)
@@ -157,6 +179,18 @@ def cli(input: list[str] | None = None) -> None:
 
     # --input: print the puzzle input
     elif args.input:
+        print(load_input(args.year, args.day))
+
+    # --start: start a new solution for the puzzle
+    elif args.start:
+        create_solution(args.year, args.day)
+        open_new_tab(f"{AOC_URL}/{args.year}/day/{args.day}")
+
+        try:
+            call(("code", SOURCE_PATH / f"{args.year}" / f"day{args.day:02}.py"))
+        except:
+            pass
+
         print(load_input(args.year, args.day))
 
     else:

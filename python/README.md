@@ -5,7 +5,7 @@
 I've written a basic runner ([run.py](/python/run.py)) which allows you to conveniently run puzzles from a CLI. If you are using my devcontainer, the runner can also be run using the `aoc` command rather than calling the Python script directly. See the help text below for usage:
 
 ```
-usage: run.py -y YEAR -d DAY [-p PART] [-r | -t | -i | -o] [-f] [-h]
+usage: run.py -y YEAR -d DAY [-p PART] [-r | -t | -i | -o | -s] [-f] [-h]
 ```
 
 ### CLI Arguments
@@ -20,7 +20,9 @@ usage: run.py -y YEAR -d DAY [-p PART] [-r | -t | -i | -o] [-f] [-h]
 
 * `-i` / `--input`: Downloads your puzzle input and prints it.
 
-* `-o` / `--open`: Opens the puzzle URL in your browser. 
+* `-o` / `--open`: Opens the puzzle URL in your browser.
+
+* `-s` / `--start`: Starts a new puzzle by copying `template.py`, then opening the new file (if run inside VSCode), opening the puzzle page in the browser, and printing the puzzle input.
 
 * `-f` / `--fast`: By default, when the solver is run it will repeatedly run for 1 second and print the median execution time. With the `-f` option, it will only run once.
 
@@ -28,9 +30,7 @@ usage: run.py -y YEAR -d DAY [-p PART] [-r | -t | -i | -o] [-f] [-h]
 > The runner expects the environment variable `AOC_SESSION` to be set in order to download your input. See wimglenn/advent-of-code-wim#1 for more information. 
 
 ### TODO:
-* New CLI function to generate new solution files
 * New CLI function to submit answers
-* Write a library for basic utility functions and classes
 
 ## Solutions
 
