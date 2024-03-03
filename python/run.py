@@ -8,7 +8,6 @@ from webbrowser import open_new_tab
 from typing import Any, Callable
 from traceback import FrameSummary, format_list, format_exc, extract_tb
 import sys
-from pprint import pprint
 
 
 FILE_PATH = Path(__file__).resolve()
