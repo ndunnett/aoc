@@ -1,0 +1,12 @@
+{
+  "dockerComposeFile": "./docker-compose.yml",
+  "service": "rust",
+  "workspaceFolder": "/home/dev/repo/rust",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer"
+      ]
+    }
+  }
+}
