@@ -21,5 +21,10 @@ RUN set -eux; \
     chown -R "$USERNAME:$USERNAME" "/home/$USERNAME"
 USER "$USERNAME"
 
+# pip install requirements
+COPY --chown="$USERNAME:$USERNAME" requirements.txt /opt/requirements.txt
+RUN set -eux; \
+    pip install -r /opt/requirements.txt
+
 # entrypoint
 CMD ["sleep", "infinity"]
