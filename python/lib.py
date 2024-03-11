@@ -1,7 +1,14 @@
 from __future__ import annotations
 from functools import cache
-from typing import Any
+from typing import Any, Callable, Generator
 from collections.abc import Iterable
+
+
+def filter_map(func: Callable, it: Iterable) -> Generator[Any, None, None]:
+    """Maps function over iterator and yields results that are not None."""
+    for element in it:
+        if (result := func(element)) is not None:
+            yield result
 
 
 def get_limits(it: Iterable) -> tuple[Any, Any]:
