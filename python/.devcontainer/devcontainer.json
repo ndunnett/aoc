@@ -1,6 +1,6 @@
 {
   "dockerComposeFile": "./docker-compose.yml",
-  "service": "python",
+  "service": "aoc_python",
   "workspaceFolder": "/home/dev/repo/python",
   "customizations": {
     "vscode": {
