@@ -15,6 +15,7 @@ from threading import Lock
 from multiprocessing import Pool
 from os import cpu_count
 import re
+import operator
 from pprint import pprint
 from time import time
 
