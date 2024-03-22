@@ -67,6 +67,13 @@ class Point(tuple):
         else:
             return Point(l.x - r.x, l.y - r.y, l.z - r.z)
 
+    @cache
+    def __mul__(self, n: int) -> Point:
+        if len(self) == 2:
+            return Point(self.x * n, self.y * n)
+        else:
+            return Point(self.x * n, self.y * n, self.z * n)
+
     def __lt__(l, r: Point) -> bool:
         if len(l) == 2:
             return l.x < r.x and l.y < r.y
