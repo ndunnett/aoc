@@ -2,6 +2,7 @@ from __future__ import annotations
 from lib import Point, is_intable, is_floatable, get_limits, filter_map
 from functools import cache, reduce
 from itertools import chain, pairwise, batched, combinations, permutations, product, cycle
+from heapq import heapify, heappop, heappush
 from enum import Enum, auto
 from copy import deepcopy
 from collections import defaultdict
