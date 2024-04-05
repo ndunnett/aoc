@@ -11,10 +11,10 @@ from ast import literal_eval
 from typing import Any, Callable, Generator
 from random import random
 from statistics import median, mean
-from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
 from multiprocessing import Pool
 from os import cpu_count
+import z3
+import math
 import re
 import operator
 from pprint import pprint
@@ -26,15 +26,15 @@ class State:
         lines = input.splitlines()
         pass
 
-    def solve(self) -> Any:
+    def solve(self) -> int:
         pass
 
 
-def part1(input: str) -> Any:
+def part1(input: str) -> int:
     return State(input).solve()
 
 
-def part2(input: str) -> Any:
+def part2(input: str) -> int:
     return State(input).solve()
 
 
