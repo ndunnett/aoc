@@ -1,14 +1,22 @@
-FROM rustlang/rust:nightly
-ARG USERNAME
-ARG REPO
+FROM ubuntu:noble
+ARG USERNAME=dev
+ARG REPO=/ws
 
 ENV AOC_USERNAME="$USERNAME" AOC_REPO="$REPO"
 
 # install mold and clang for faster linking, zsh, sudo and git for convenience
 ARG DEBIAN_FRONTEND=noninteractive
-RUN set -eux; apt update; \
-    apt install -y mold clang zsh sudo git; \
-    apt clean; rm -rf /var/lib/apt/lists/*
+RUN set -eux; apt update; apt full-upgrade -y; \
+    apt install -y ca-certificates libc6-dev pkg-config libssl-dev \
+        mold clang zsh sudo git wget; \
+    apt autoremove -y; apt clean; rm -rf /var/lib/apt/lists/*
+
+# delete default user on new ubuntu images
+RUN set -eux; \
+    grep ubuntu /etc/passwd && \
+    touch /var/mail/ubuntu && \
+    chown ubuntu /var/mail/ubuntu && \
+    userdel -r ubuntu
 
 # create non-root sudo user
 RUN set -eux; \
@@ -25,7 +33,7 @@ RUN set -eux; \
     chown -R "$AOC_USERNAME:$AOC_USERNAME" "$AOC_REPO" "/home/$AOC_USERNAME"
 WORKDIR "$AOC_REPO"
 
-# create shellscript to conveniently call AOC runner
+# create shellscript to conveniently call AoC runner
 RUN set -x; \
     echo "#!/bin/sh" > /usr/local/bin/aoc; \
     echo "cd $AOC_REPO/rust && cargo run -- \$@" >> /usr/local/bin/aoc; \
@@ -34,11 +42,11 @@ RUN set -x; \
 # change user
 USER "$AOC_USERNAME"
 
-# add local bin to path
-ENV PATH="/home/$AOC_USERNAME/.local/bin:$PATH"
+# install rust
+RUN set -eux; wget -qO - https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
 
-# install clippy and rustfmt
-RUN set -eux; rustup component add clippy rustfmt
+# add local bin to path
+ENV PATH="/home/$AOC_USERNAME/.local/bin:/home/$AOC_USERNAME/.cargo/bin:$PATH"
 
 # replace entrypoint
 CMD sleep infinity

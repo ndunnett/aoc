@@ -1,20 +1,7 @@
 {
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".",
-    "args": {
-      "USERNAME": "dev",
-      "REPO": "/ws"
-    }
-  },
-  "containerUser": "dev",
-  "remoteUser": "dev",
-  "runArgs": [
-    "--env-file",
-    "../.env"
-  ],
-  "workspaceMount": "source=${localWorkspaceFolder}/../,target=/ws,type=bind,consistency=cached",
-  "workspaceFolder": "/ws",
+  "dockerComposeFile": "./docker-compose.yml",
+  "service": "aoc_rust",
+  "workspaceFolder": "/ws/rust",
   "customizations": {
     "vscode": {
       "extensions": [

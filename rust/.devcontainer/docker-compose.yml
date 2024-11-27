@@ -1,0 +1,8 @@
+services:
+  aoc_rust:
+    build:
+      context: .
+    env_file:
+      - ../../.env
+    volumes:
+      - ../..:/ws
