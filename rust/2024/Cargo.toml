@@ -1,10 +1,7 @@
 [package]
-name = "aoc-2023"
+name = "aoc-2024"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 aoc = { workspace = true }
-regex = "1.11.1"
-rayon = "1.10.0"
-itertools = "0.13.0"

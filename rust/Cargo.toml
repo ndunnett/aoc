@@ -1,0 +1,17 @@
+[workspace]
+default-members = ["aoc"]
+members = ["aoc", "2022", "2023", "2024"]
+resolver = "2"
+
+[workspace.dependencies]
+aoc = { path = "aoc" }
+
+[profile.dev]
+codegen-units = 1
+lto = "off"
+opt-level = 0
+
+[profile.release]
+lto = true
+opt-level = 3
+strip = true

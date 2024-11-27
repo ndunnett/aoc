@@ -1,28 +1,44 @@
-FROM ubuntu:jammy
+FROM rustlang/rust:nightly
+ARG USERNAME
+ARG REPO
 
-# install dependencies
+ENV AOC_USERNAME="$USERNAME" AOC_REPO="$REPO"
+
+# install mold and clang for faster linking, zsh, sudo and git for convenience
+ARG DEBIAN_FRONTEND=noninteractive
+RUN set -eux; apt update; \
+    apt install -y mold clang zsh sudo git; \
+    apt clean; rm -rf /var/lib/apt/lists/*
+
+# create non-root sudo user
 RUN set -eux; \
-    DEBIAN_FRONTEND="noninteractive"; \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get install -y --no-install-recommends \
-        ca-certificates gcc libc6-dev pkg-config libssl-dev wget git zsh; \
-    apt-get clean -y; \
-    apt-get autoclean -y; \
-    apt-get autoremove -y; \
-    rm -rf /var/lib/apt/lists/*
+    useradd --create-home --user-group --no-log-init "$AOC_USERNAME"; \
+    echo "$USERNAME ALL=(root) NOPASSWD:ALL" > "/etc/sudoers.d/$AOC_USERNAME"; \
+    chmod 0440 "/etc/sudoers.d/$AOC_USERNAME"
 
-# create user
-ARG USERNAME=dev
+# add cargo config for multithreaded frontend and use mold linker
+COPY fast_cargo_config.toml "/home/$AOC_USERNAME/.cargo/config.toml"
+
+# create workspace dir and fix ownership
 RUN set -eux; \
-    useradd --create-home --user-group --no-log-init "$USERNAME"; \
-    mkdir -p "/home/$USERNAME/repo"; \
-    chown -R "$USERNAME:$USERNAME" "/home/$USERNAME"
-USER "$USERNAME"
+    mkdir -p "$AOC_REPO"; \
+    chown -R "$AOC_USERNAME:$AOC_USERNAME" "$AOC_REPO" "/home/$AOC_USERNAME"
+WORKDIR "$AOC_REPO"
 
-# install rust
-RUN set -eux; \
-    wget -qO - https://sh.rustup.rs | sh -s -- -y
+# create shellscript to conveniently call AOC runner
+RUN set -x; \
+    echo "#!/bin/sh" > /usr/local/bin/aoc; \
+    echo "cd $AOC_REPO/rust && cargo run -- \$@" >> /usr/local/bin/aoc; \
+    chmod +x /usr/local/bin/aoc
 
-# entrypoint
-CMD ["sleep", "infinity"]
+# change user
+USER "$AOC_USERNAME"
+
+# add local bin to path
+ENV PATH="/home/$AOC_USERNAME/.local/bin:$PATH"
+
+# install clippy and rustfmt
+RUN set -eux; rustup component add clippy rustfmt
+
+# replace entrypoint
+CMD sleep infinity

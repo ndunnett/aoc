@@ -1,11 +1,2 @@
-# Repo specific
-.cache
-.env
-
-# Python
-__pycache__
-
-# Rust
-target
-Cargo.lock
-**/*.rs.bk
+/.cache
+/.env
