@@ -18,7 +18,7 @@ impl Solver for Solution {
     }
 }
 
-aoc::solution!(1);
+aoc::solution!();
 
 #[cfg(test)]
 mod test {

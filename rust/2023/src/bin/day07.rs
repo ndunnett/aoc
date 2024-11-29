@@ -1,7 +1,4 @@
-aoc::solution!();
-
 use itertools::Itertools;
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 enum Face {
@@ -139,9 +136,9 @@ impl Hand {
     }
 }
 
-fn solve(input: &str, part2: bool) -> u32 {
-    input
-        .lines()
+fn solve(lines: &[String], part2: bool) -> u32 {
+    lines
+        .iter()
         .map(|line| {
             let mut it = line.split_whitespace();
             let cards: Vec<Card> = it
@@ -161,17 +158,31 @@ fn solve(input: &str, part2: bool) -> u32 {
         .fold(0, |acc, (i, (_, wager))| acc + wager * (i as u32 + 1))
 }
 
-fn part1(input: &str) -> u32 {
-    solve(input, false)
+pub struct Solution {
+    lines: Vec<String>,
 }
 
-fn part2(input: &str) -> u32 {
-    solve(input, true)
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            lines: input.lines().map(String::from).collect(),
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(solve(&self.lines, false))
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(solve(&self.lines, true))
+    }
 }
+
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
     const INPUT: &str = "32T3K 765
 T55J5 684
@@ -181,11 +192,15 @@ QQQJA 483";
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(INPUT), 6440);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "6440");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT), 5905);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "5905");
     }
 }

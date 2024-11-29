@@ -1,8 +1,4 @@
-aoc::solution!();
-
-use std::collections::HashSet;
-
-fn get_unique_packet(signal: &str, length: usize) -> usize {
+fn get_unique_packet(signal: &str, length: usize) -> Anyhow<usize> {
     let mut packet = Vec::new();
 
     for (i, char) in signal.chars().enumerate() {
@@ -15,17 +11,31 @@ fn get_unique_packet(signal: &str, length: usize) -> usize {
         let packet_set = packet.iter().collect::<HashSet<_>>();
 
         if packet.len() == length && packet_set.len() == length {
-            return i + 1;
+            return Ok(i + 1);
         }
     }
 
-    panic!("failed to find unique packet");
+    Err(err("failed to find unique packet"))
 }
 
-fn part1(input: &str) -> usize {
-    get_unique_packet(input, 4)
+pub struct Solution {
+    input: String,
 }
 
-fn part2(input: &str) -> usize {
-    get_unique_packet(input, 14)
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            input: String::from(input),
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        get_unique_packet(&self.input, 4)
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        get_unique_packet(&self.input, 14)
+    }
 }
+
+aoc::solution!();

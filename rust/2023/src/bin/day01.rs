@@ -1,18 +1,4 @@
-aoc::solution!();
-
 use regex::Regex;
-
-fn part1(input: &str) -> u32 {
-    let mut sum = 0;
-    let re = Regex::new(r"\d").unwrap();
-
-    for line in input.lines() {
-        let numbers: Vec<u32> = re.find_iter(line).map(|m| m.as_str().parse().unwrap()).collect();
-        sum += numbers[0] * 10 + numbers[numbers.len() - 1];
-    }
-
-    sum
-}
 
 fn parse_caps(m: &str) -> u32 {
     match m {
@@ -25,7 +11,7 @@ fn parse_caps(m: &str) -> u32 {
         "seven" | "7" => 7,
         "eight" | "8" => 8,
         "nine" | "9" => 9,
-        _ => panic!("invalid match")
+        _ => panic!("invalid match"),
     }
 }
 
@@ -33,18 +19,55 @@ fn rev(input: &str) -> String {
     input.chars().rev().collect::<String>()
 }
 
-fn part2(input: &str) -> u32 {
-    let mut sum = 0;
-    let pattern = "one|two|three|four|five|six|seven|eight|nine";
-    let re_first = Regex::new(format!("(\\d|{})", pattern).as_str()).unwrap();
-    let re_last = Regex::new(format!("(\\d|{})", rev(pattern)).as_str()).unwrap();
+pub struct Solution {
+    lines: Vec<String>,
+}
 
-    for line in input.lines() {
-        // disgusting
-        let first = parse_caps(re_first.captures(line).unwrap().get(0).unwrap().as_str());
-        let last = parse_caps(rev(re_last.captures(rev(line).as_str()).unwrap().get(0).unwrap().as_str()).as_str());
-        sum += first * 10 + last;
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            lines: input.lines().map(String::from).collect(),
+        })
     }
 
-    sum
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut sum = 0;
+        let re = Regex::new(r"\d")?;
+
+        for line in self.lines.iter() {
+            let numbers: Vec<u32> = re
+                .find_iter(line)
+                .map(|m| m.as_str().parse().unwrap())
+                .collect();
+            sum += numbers[0] * 10 + numbers[numbers.len() - 1];
+        }
+
+        Ok(sum)
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut sum = 0;
+        let pattern = "one|two|three|four|five|six|seven|eight|nine";
+        let re_first = Regex::new(format!("(\\d|{})", pattern).as_str())?;
+        let re_last = Regex::new(format!("(\\d|{})", rev(pattern)).as_str())?;
+
+        for line in self.lines.iter() {
+            // disgusting
+            let first = parse_caps(re_first.captures(line).unwrap().get(0).unwrap().as_str());
+            let last = parse_caps(
+                rev(re_last
+                    .captures(rev(line).as_str())
+                    .unwrap()
+                    .get(0)
+                    .unwrap()
+                    .as_str())
+                .as_str(),
+            );
+            sum += first * 10 + last;
+        }
+
+        Ok(sum)
+    }
 }
+
+aoc::solution!();

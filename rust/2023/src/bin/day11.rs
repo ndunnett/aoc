@@ -1,5 +1,3 @@
-aoc::solution!();
-
 use itertools::Itertools;
 
 struct Point {
@@ -7,17 +5,44 @@ struct Point {
     y: usize,
 }
 
-type Universe = Vec<Point>;
-
-trait Solution {
-    fn parse(input: &str) -> Universe;
-    fn expanded(&self, age: usize) -> Universe;
-    fn solve(&self) -> usize;
+pub struct Solution {
+    uni: Vec<Point>,
 }
 
-impl Solution for Universe {
-    fn parse(input: &str) -> Universe {
-        input
+impl Solution {
+    fn expanded(&self, age: usize) -> Self {
+        let extent = self.uni.iter().fold(Point { x: 0, y: 0 }, |acc, g| Point {
+            x: acc.x.max(g.x),
+            y: acc.y.max(g.y),
+        });
+
+        let cols = (0..=extent.x).filter(|x| self.uni.iter().all(|g| g.x != *x));
+        let rows = (0..=extent.y).filter(|y| self.uni.iter().all(|g| g.y != *y));
+
+        let uni = self
+            .uni
+            .iter()
+            .map(|g| Point {
+                x: g.x + age.saturating_sub(1) * cols.clone().filter(|x| x < &g.x).count(),
+                y: g.y + age.saturating_sub(1) * rows.clone().filter(|y| y < &g.y).count(),
+            })
+            .collect_vec();
+
+        Self { uni }
+    }
+
+    fn solve(&self) -> usize {
+        self.uni
+            .iter()
+            .combinations(2)
+            .map(|v| v[0].x.abs_diff(v[1].x) + v[0].y.abs_diff(v[1].y))
+            .sum()
+    }
+}
+
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        let uni = input
             .lines()
             .enumerate()
             .flat_map(|(y, line)| {
@@ -26,47 +51,27 @@ impl Solution for Universe {
                     .filter_map(|(x, c)| if c == '#' { Some(Point { x, y }) } else { None })
                     .collect_vec()
             })
-            .collect_vec()
+            .collect_vec();
+
+        Ok(Self { uni })
     }
 
-    fn expanded(&self, age: usize) -> Universe {
-        let extent = self.iter().fold(Point { x: 0, y: 0 }, |acc, g| Point {
-            x: acc.x.max(g.x),
-            y: acc.y.max(g.y),
-        });
-
-        let cols = (0..=extent.x).filter(|x| self.iter().all(|g| g.x != *x));
-        let rows = (0..=extent.y).filter(|y| self.iter().all(|g| g.y != *y));
-
-        self.iter()
-            .map(|g| Point {
-                x: g.x + age.saturating_sub(1) * cols.clone().filter(|x| x < &g.x).count(),
-                y: g.y + age.saturating_sub(1) * rows.clone().filter(|y| y < &g.y).count(),
-            })
-            .collect_vec()
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.expanded(2).solve())
     }
 
-    fn solve(&self) -> usize {
-        self.iter()
-            .combinations(2)
-            .map(|v| v[0].x.abs_diff(v[1].x) + v[0].y.abs_diff(v[1].y))
-            .sum()
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.expanded(1000000).solve())
     }
 }
 
-fn part1(input: &str) -> usize {
-    Universe::parse(input).expanded(2).solve()
-}
-
-fn part2(input: &str) -> usize {
-    Universe::parse(input).expanded(1000000).solve()
-}
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{Solution, Universe};
+    use super::{Solution, Solver};
 
-    const INPUT1: &str = "...#......
+    const INPUT: &str = "...#......
 .......#..
 #.........
 ..........
@@ -79,12 +84,22 @@ mod test {
 
     #[test]
     fn test_part1() {
-        assert_eq!(Universe::parse(INPUT1).expanded(2).solve(), 374);
+        let solution = Solution::new(INPUT).unwrap();
+        let answer = solution.expanded(2).solve();
+        assert_eq!(answer, 374);
     }
 
     #[test]
-    fn test_part2() {
-        assert_eq!(Universe::parse(INPUT1).expanded(10).solve(), 1030);
-        assert_eq!(Universe::parse(INPUT1).expanded(100).solve(), 8410);
+    fn test_part2_1() {
+        let solution = Solution::new(INPUT).unwrap();
+        let answer = solution.expanded(10).solve();
+        assert_eq!(answer, 1030);
+    }
+
+    #[test]
+    fn test_part2_2() {
+        let solution = Solution::new(INPUT).unwrap();
+        let answer = solution.expanded(100).solve();
+        assert_eq!(answer, 8410);
     }
 }

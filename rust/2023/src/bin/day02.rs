@@ -1,72 +1,83 @@
-aoc::solution!();
-
 use std::cmp::max;
 
 use regex::Regex;
 
-fn part1(input: &str) -> u32 {
-    let mut sum = 0;
-    let game_re = Regex::new(r"Game (?P<num>\d+):").unwrap();
-    let exprs = vec![
-        (Regex::new(r"(?P<num>\d+) red").unwrap(), 12),
-        (Regex::new(r"(?P<num>\d+) green").unwrap(), 13),
-        (Regex::new(r"(?P<num>\d+) blue").unwrap(), 14),
-    ];
+pub struct Solution {
+    lines: Vec<String>,
+}
 
-    for line in input.lines() {
-        let game = game_re
-            .captures(line)
-            .unwrap()
-            .name("num")
-            .unwrap()
-            .as_str()
-            .parse::<u32>()
-            .unwrap();
-        let mut possible = true;
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            lines: input.lines().map(String::from).collect(),
+        })
+    }
 
-        'outer: for (re, cubes) in &exprs {
-            for cap in re.captures_iter(line) {
-                if cap.name("num").unwrap().as_str().parse::<u32>().unwrap() > *cubes {
-                    possible = false;
-                    break 'outer;
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut sum = 0;
+        let game_re = Regex::new(r"Game (?P<num>\d+):")?;
+
+        let exprs = vec![
+            (Regex::new(r"(?P<num>\d+) red")?, 12),
+            (Regex::new(r"(?P<num>\d+) green")?, 13),
+            (Regex::new(r"(?P<num>\d+) blue")?, 14),
+        ];
+
+        for line in self.lines.iter() {
+            let game = game_re
+                .captures(line)
+                .unwrap()
+                .name("num")
+                .unwrap()
+                .as_str()
+                .parse::<u32>()?;
+
+            let mut possible = true;
+
+            'outer: for (re, cubes) in &exprs {
+                for cap in re.captures_iter(line) {
+                    if cap.name("num").unwrap().as_str().parse::<u32>()? > *cubes {
+                        possible = false;
+                        break 'outer;
+                    }
                 }
             }
+
+            if possible {
+                sum += game;
+            }
         }
 
-        if possible {
-            sum += game;
-        }
+        Ok(sum)
     }
 
-    sum
-}
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut sum = 0;
 
-fn part2(input: &str) -> u32 {
-    let mut sum = 0;
-    let exprs = vec![
-        Regex::new(r"(?P<num>\d+) red").unwrap(),
-        Regex::new(r"(?P<num>\d+) green").unwrap(),
-        Regex::new(r"(?P<num>\d+) blue").unwrap(),
-    ];
+        let exprs = vec![
+            Regex::new(r"(?P<num>\d+) red")?,
+            Regex::new(r"(?P<num>\d+) green")?,
+            Regex::new(r"(?P<num>\d+) blue")?,
+        ];
 
-    for line in input.lines() {
-        let mut power = 1;
+        for line in self.lines.iter() {
+            let mut power = 1;
 
-        for re in &exprs {
-            let mut cubes = 0;
+            for re in &exprs {
+                let mut cubes = 0;
 
-            for cap in re.captures_iter(line) {
-                cubes = max(
-                    cubes,
-                    cap.name("num").unwrap().as_str().parse::<u32>().unwrap(),
-                );
+                for cap in re.captures_iter(line) {
+                    cubes = max(cubes, cap.name("num").unwrap().as_str().parse::<u32>()?);
+                }
+
+                power *= cubes;
             }
 
-            power *= cubes;
+            sum += power;
         }
 
-        sum += power;
+        Ok(sum)
     }
-
-    sum
 }
+
+aoc::solution!();

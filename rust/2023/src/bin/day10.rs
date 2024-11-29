@@ -1,6 +1,4 @@
-aoc::solution!();
-
-use std::{collections::HashMap, ops::Add};
+use std::ops::Add;
 
 use itertools::Itertools;
 
@@ -62,41 +60,11 @@ impl Tile {
     }
 }
 
-type Maze = HashMap<Point, Pipe>;
-
-trait Solution {
-    fn from_vec(tiles: &[Tile]) -> Maze;
-    fn parse(input: &str) -> Maze;
-    fn neighbours(&self, tile: &Tile) -> Vec<Tile>;
-    fn connections(&self, pipe: &Tile) -> Vec<Tile>;
-    fn find_circuit(&self, from: &Tile, seen: &[Tile]) -> Option<Vec<Tile>>;
-    fn find_start(&self) -> Tile;
-    fn reduced(&self) -> Maze;
-    fn extent(&self) -> (Point, Point);
+pub struct Solution {
+    maze: HashMap<Point, Pipe>,
 }
 
-impl Solution for Maze {
-    fn from_vec(tiles: &[Tile]) -> Maze {
-        tiles.iter().map(|&p| (p.point, p.pipe)).collect()
-    }
-
-    fn parse(input: &str) -> Maze {
-        let tiles = input
-            .lines()
-            .enumerate()
-            .flat_map(|(y, line)| {
-                line.chars()
-                    .enumerate()
-                    .filter_map(|(x, c)| {
-                        Pipe::from_char(c).map(|j| Tile::new(Point::new(x as i32, y as i32), j))
-                    })
-                    .collect_vec()
-            })
-            .collect_vec();
-
-        Maze::from_vec(&tiles)
-    }
-
+impl Solution {
     fn neighbours(&self, tile: &Tile) -> Vec<Tile> {
         match tile.pipe {
             Pipe::Vertical => vec![Point::new(0, -1), Point::new(0, 1)],
@@ -116,7 +84,7 @@ impl Solution for Maze {
         .filter_map(|&offset| {
             let p = tile.point + offset;
 
-            if let Some(&t) = self.get(&p) {
+            if let Some(&t) = self.maze.get(&p) {
                 Some(Tile::new(p, t))
             } else {
                 None
@@ -145,7 +113,8 @@ impl Solution for Maze {
     }
 
     fn find_start(&self) -> Tile {
-        self.iter()
+        self.maze
+            .iter()
             .find_map(|(&point, &pipe)| {
                 if pipe == Pipe::Cross {
                     Some(Tile::new(point, pipe))
@@ -156,16 +125,10 @@ impl Solution for Maze {
             .unwrap()
     }
 
-    fn reduced(&self) -> Maze {
-        let start = self.find_start();
-        self.find_circuit(&start, &[start])
-            .map(|c| Maze::from_vec(&c))
-            .unwrap_or(self.clone())
-    }
-
     fn extent(&self) -> (Point, Point) {
         let (min_x, max_x, min_y, max_y) =
-            self.iter()
+            self.maze
+                .iter()
                 .fold((0, 0, 0, 0), |(min_x, max_x, min_y, max_y), (point, _)| {
                     (
                         min_x.min(point.x),
@@ -179,32 +142,62 @@ impl Solution for Maze {
     }
 }
 
-fn part1(input: &str) -> usize {
-    Maze::parse(input).reduced().len() / 2
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        let maze = input
+            .lines()
+            .enumerate()
+            .flat_map(|(y, line)| {
+                line.chars()
+                    .enumerate()
+                    .filter_map(|(x, c)| {
+                        Pipe::from_char(c).map(|j| Tile::new(Point::new(x as i32, y as i32), j))
+                    })
+                    .collect_vec()
+            })
+            .map(|p| (p.point, p.pipe))
+            .collect();
+
+        let mut sol = Self { maze };
+        let start = sol.find_start();
+
+        if let Some(circuit) = sol.find_circuit(&start, &[start]) {
+            sol.maze = circuit.iter().map(|p| (p.point, p.pipe)).collect();
+        }
+
+        Ok(sol)
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.maze.len() / 2)
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        let (min, max) = self.extent();
+
+        Ok((min.y..=max.y)
+            .map(|y| {
+                (min.x..=max.x)
+                    .fold((0, false), |(acc, in_loop), x| {
+                        match (in_loop, self.maze.get(&Point::new(x, y))) {
+                            (_, Some(Pipe::Vertical | Pipe::BendNW | Pipe::BendNE)) => {
+                                (acc, !in_loop)
+                            }
+                            (true, None) => (acc + 1, in_loop),
+                            _ => (acc, in_loop),
+                        }
+                    })
+                    .0
+            })
+            .sum::<i32>())
+    }
 }
 
-fn part2(input: &str) -> usize {
-    let maze = Maze::parse(input).reduced();
-    let (min, max) = maze.extent();
-
-    (min.y..=max.y)
-        .map(|y| {
-            (min.x..=max.x)
-                .fold((0, false), |(acc, in_loop), x| {
-                    match (in_loop, maze.get(&Point::new(x, y))) {
-                        (_, Some(Pipe::Vertical | Pipe::BendNW | Pipe::BendNE)) => (acc, !in_loop),
-                        (true, None) => (acc + 1, in_loop),
-                        _ => (acc, in_loop),
-                    }
-                })
-                .0
-        })
-        .sum()
-}
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
     const INPUT1: &str = "-L|F7
 7S-7|
@@ -251,15 +244,37 @@ L.L7LFJ|||||FJL7||LJ
 L7JLJL-JLJLJL--JLJ.L";
 
     #[test]
-    fn test_part1() {
-        assert_eq!(part1(INPUT1), 4);
-        assert_eq!(part1(INPUT2), 8);
+    fn test_part1_1() {
+        let mut solution = Solution::new(INPUT1).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "4");
     }
 
     #[test]
-    fn test_part2() {
-        assert_eq!(part2(INPUT3), 4);
-        assert_eq!(part2(INPUT4), 8);
-        assert_eq!(part2(INPUT5), 10);
+    fn test_part1_2() {
+        let mut solution = Solution::new(INPUT2).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "8");
+    }
+
+    #[test]
+    fn test_part2_1() {
+        let mut solution = Solution::new(INPUT3).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "4");
+    }
+
+    #[test]
+    fn test_part2_2() {
+        let mut solution = Solution::new(INPUT4).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "8");
+    }
+
+    #[test]
+    fn test_part2_3() {
+        let mut solution = Solution::new(INPUT5).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "10");
     }
 }

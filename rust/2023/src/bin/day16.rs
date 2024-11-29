@@ -1,9 +1,4 @@
-aoc::solution!();
-
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Add,
-};
+use std::ops::Add;
 
 use rayon::prelude::*;
 
@@ -56,32 +51,17 @@ impl Tile {
     }
 }
 
-type Contraption = HashMap<Point, Tile>;
-
-trait Solution {
-    fn parse(input: &str) -> Contraption;
-    fn trace_beam(&self, position: Point, direction: Direction) -> Vec<Point>;
+pub struct Solution {
+    contraption: HashMap<Point, Tile>,
 }
 
-impl Solution for Contraption {
-    fn parse(input: &str) -> Contraption {
-        input
-            .lines()
-            .enumerate()
-            .flat_map(|(y, l)| {
-                l.chars()
-                    .enumerate()
-                    .map(move |(x, c)| (Point::new(x as i32, y as i32), Tile::from_char(c)))
-            })
-            .collect()
-    }
-
+impl Solution {
     fn trace_beam(&self, position: Point, direction: Direction) -> Vec<Point> {
         let mut beams = vec![(position, direction)];
         let mut energised: HashMap<Point, HashSet<Direction>> = HashMap::new();
 
         let mut energise_tile = |p: Point, d: Direction| {
-            if self.contains_key(&p) {
+            if self.contraption.contains_key(&p) {
                 if let Some(e) = energised.get_mut(&p) {
                     e.insert(d)
                 } else {
@@ -94,7 +74,7 @@ impl Solution for Contraption {
 
         while let Some((mut p, mut d)) = beams.pop() {
             while energise_tile(p, d) {
-                if let Some(tile) = self.get(&p) {
+                if let Some(tile) = self.contraption.get(&p) {
                     match tile {
                         Tile::Vertical => {
                             if d == Direction::E || d == Direction::W {
@@ -145,35 +125,53 @@ impl Solution for Contraption {
     }
 }
 
-fn part1(input: &str) -> usize {
-    Contraption::parse(input)
-        .trace_beam(Point::new(0, 0), Direction::E)
-        .len()
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            contraption: input
+                .lines()
+                .enumerate()
+                .flat_map(|(y, l)| {
+                    l.chars()
+                        .enumerate()
+                        .map(move |(x, c)| (Point::new(x as i32, y as i32), Tile::from_char(c)))
+                })
+                .collect(),
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.trace_beam(Point::new(0, 0), Direction::E).len())
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        let extent = self
+            .contraption
+            .keys()
+            .fold(Point { x: 0, y: 0 }, |acc, p| Point {
+                x: acc.x.max(p.x),
+                y: acc.y.max(p.y),
+            });
+
+        Ok((0..=extent.x)
+            .map(|x| (Point::new(x, 0), Direction::S))
+            .chain((0..=extent.x).map(|x| (Point::new(x, extent.y), Direction::N)))
+            .chain((0..=extent.y).map(|y| (Point::new(0, y), Direction::E)))
+            .chain((0..=extent.y).map(|y| (Point::new(extent.x, y), Direction::W)))
+            .par_bridge()
+            .map(|(p, d)| self.trace_beam(p, d).len())
+            .max()
+            .unwrap_or(0))
+    }
 }
 
-fn part2(input: &str) -> usize {
-    let c = Contraption::parse(input);
-    let extent = c.keys().fold(Point { x: 0, y: 0 }, |acc, p| Point {
-        x: acc.x.max(p.x),
-        y: acc.y.max(p.y),
-    });
-
-    (0..=extent.x)
-        .map(|x| (Point::new(x, 0), Direction::S))
-        .chain((0..=extent.x).map(|x| (Point::new(x, extent.y), Direction::N)))
-        .chain((0..=extent.y).map(|y| (Point::new(0, y), Direction::E)))
-        .chain((0..=extent.y).map(|y| (Point::new(extent.x, y), Direction::W)))
-        .par_bridge()
-        .map(|(p, d)| c.trace_beam(p, d).len())
-        .max()
-        .unwrap_or(0)
-}
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
-    const INPUT1: &str = r".|...\....
+    const INPUT: &str = r".|...\....
 |.-.\.....
 .....|-...
 ........|.
@@ -186,11 +184,15 @@ mod test {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(INPUT1), 46);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "46");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT1), 51);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "51");
     }
 }

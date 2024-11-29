@@ -1,7 +1,3 @@
-aoc::solution!();
-
-use std::{collections::HashMap, sync::OnceLock};
-
 use regex::Regex;
 
 fn parse_stacks(input: &str) -> HashMap<i32, Vec<char>> {
@@ -49,47 +45,61 @@ fn parse_command(line: &str) -> (i32, i32, i32) {
     )
 }
 
-fn part1(input: &str) -> String {
-    let mut answer = Vec::new();
-    let mut stacks = parse_stacks(input);
-
-    for line in input.lines().skip(10) {
-        let (n, src, dest) = parse_command(line);
-        let mut crates = Vec::new();
-
-        for _ in 0..n {
-            crates.push(stacks.get_mut(&src).unwrap().pop().unwrap());
-        }
-
-        stacks.get_mut(&dest).unwrap().append(&mut crates);
-    }
-
-    for i in 1..=9 {
-        answer.push(*stacks[&i].last().unwrap());
-    }
-
-    String::from_iter(answer.iter())
+pub struct Solution {
+    input: String,
 }
 
-fn part2(input: &str) -> String {
-    let mut answer = Vec::new();
-    let mut stacks = parse_stacks(input);
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            input: String::from(input),
+        })
+    }
 
-    for line in input.lines().skip(10) {
-        let (n, src, dest) = parse_command(line);
-        let mut crates = Vec::new();
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut answer = Vec::new();
+        let mut stacks = parse_stacks(&self.input);
 
-        for _ in 0..n {
-            crates.push(stacks.get_mut(&src).unwrap().pop().unwrap());
+        for line in self.input.lines().skip(10) {
+            let (n, src, dest) = parse_command(line);
+            let mut crates = Vec::new();
+
+            for _ in 0..n {
+                crates.push(stacks.get_mut(&src).unwrap().pop().unwrap());
+            }
+
+            stacks.get_mut(&dest).unwrap().append(&mut crates);
         }
 
-        crates.reverse();
-        stacks.get_mut(&dest).unwrap().append(&mut crates);
+        for i in 1..=9 {
+            answer.push(*stacks[&i].last().unwrap());
+        }
+
+        Ok(String::from_iter(answer.iter()))
     }
 
-    for i in 1..=9 {
-        answer.push(*stacks[&i].last().unwrap());
-    }
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut answer = Vec::new();
+        let mut stacks = parse_stacks(&self.input);
 
-    String::from_iter(answer.iter())
+        for line in self.input.lines().skip(10) {
+            let (n, src, dest) = parse_command(line);
+            let mut crates = Vec::new();
+
+            for _ in 0..n {
+                crates.push(stacks.get_mut(&src).unwrap().pop().unwrap());
+            }
+
+            crates.reverse();
+            stacks.get_mut(&dest).unwrap().append(&mut crates);
+        }
+
+        for i in 1..=9 {
+            answer.push(*stacks[&i].last().unwrap());
+        }
+
+        Ok(String::from_iter(answer.iter()))
+    }
 }
+
+aoc::solution!();

@@ -1,5 +1,3 @@
-aoc::solution!();
-
 #[derive(Debug, Clone, Copy)]
 enum Axis {
     V,
@@ -69,50 +67,49 @@ impl Reflection for MirrorView {
     }
 }
 
-type Mirror = Vec<Point>;
+struct Mirror(Vec<Point>);
 
-trait Solution {
-    fn parse(input: &str) -> Mirror;
-    fn view(&self, axis: Axis) -> MirrorView;
-}
-
-impl Solution for Mirror {
-    fn parse(chunk: &str) -> Mirror {
-        chunk
-            .lines()
-            .enumerate()
-            .flat_map(|(y, line)| {
-                line.chars().enumerate().filter_map(move |(x, c)| {
-                    if c == '#' {
-                        Some(Point::new(x, y))
-                    } else {
-                        None
-                    }
+impl Mirror {
+    fn parse(chunk: &str) -> Self {
+        Self(
+            chunk
+                .lines()
+                .enumerate()
+                .flat_map(|(y, line)| {
+                    line.chars().enumerate().filter_map(move |(x, c)| {
+                        if c == '#' {
+                            Some(Point::new(x, y))
+                        } else {
+                            None
+                        }
+                    })
                 })
-            })
-            .collect()
+                .collect(),
+        )
     }
 
     fn view(&self, axis: Axis) -> MirrorView {
-        let extent = self.iter().fold(Point::new(0, 0), |acc, r| {
+        let extent = self.0.iter().fold(Point::new(0, 0), |acc, r| {
             Point::new(acc.x.max(r.x), acc.y.max(r.y))
         });
 
         (0..=extent.view(axis))
             .map(|a| {
                 (0..=extent.view(axis.inverse())).fold(0, |acc, b| {
-                    acc | ((self.contains(&Point::new(a, b).pivoted(axis)) as usize) << b)
+                    acc | ((self.0.contains(&Point::new(a, b).pivoted(axis)) as usize) << b)
                 })
             })
             .collect()
     }
 }
 
-fn solve(input: &str, smudges: u32) -> usize {
-    input
-        .split("\n\n")
-        .map(Mirror::parse)
-        .fold(0, |acc, mirror| {
+pub struct Solution {
+    mirrors: Vec<Mirror>,
+}
+
+impl Solution {
+    fn solve(&self, smudges: u32) -> usize {
+        self.mirrors.iter().fold(0, |acc, mirror| {
             acc + mirror
                 .view(Axis::V)
                 .find_reflection(smudges)
@@ -122,21 +119,32 @@ fn solve(input: &str, smudges: u32) -> usize {
                     .map(|r| r * 100))
                 .unwrap_or(0)
         })
+    }
 }
 
-fn part1(input: &str) -> usize {
-    solve(input, 0)
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            mirrors: input.split("\n\n").map(Mirror::parse).collect(),
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.solve(0))
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.solve(1))
+    }
 }
 
-fn part2(input: &str) -> usize {
-    solve(input, 1)
-}
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
-    const INPUT1: &str = "#.##..##.
+    const INPUT: &str = "#.##..##.
 ..#.##.#.
 ##......#
 ##......#
@@ -154,11 +162,15 @@ mod test {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(INPUT1), 405);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "405");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT1), 400);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "400");
     }
 }

@@ -1,9 +1,4 @@
-aoc::solution!();
-
-use std::{
-    collections::{BTreeSet, HashMap},
-    ops::Add,
-};
+use std::{collections::BTreeSet, ops::Add};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum Direction {
@@ -34,37 +29,15 @@ impl Add for Point {
 }
 
 #[derive(Debug, Clone)]
-struct Platform {
+pub struct Solution {
     round_rocks: BTreeSet<Point>,
     square_rocks: BTreeSet<Point>,
     w: i32,
     h: i32,
 }
 
-impl Platform {
-    fn parse(input: &str) -> Platform {
-        let mut round_rocks: BTreeSet<Point> = BTreeSet::new();
-        let mut square_rocks: BTreeSet<Point> = BTreeSet::new();
-
-        for (y, l) in input.lines().enumerate() {
-            for (x, c) in l.chars().enumerate() {
-                if c == 'O' {
-                    round_rocks.insert(Point::new(x as i32, y as i32));
-                } else if c == '#' {
-                    square_rocks.insert(Point::new(x as i32, y as i32));
-                }
-            }
-        }
-
-        Platform {
-            round_rocks,
-            square_rocks,
-            w: input.lines().next().map_or(0, |s| s.len()) as i32,
-            h: input.lines().count() as i32,
-        }
-    }
-
-    fn tilted(&self, direction: Direction) -> Platform {
+impl Solution {
+    fn tilted(&self, direction: Direction) -> Self {
         let move_p = match direction {
             Direction::N => Point::new(0, -1),
             Direction::S => Point::new(0, 1),
@@ -106,7 +79,7 @@ impl Platform {
             }
         }
 
-        Platform {
+        Self {
             round_rocks: moved,
             square_rocks: self.square_rocks.clone(),
             w: self.w,
@@ -114,7 +87,7 @@ impl Platform {
         }
     }
 
-    fn cycled(&self, n: usize) -> Platform {
+    fn cycled(&self, n: usize) -> Self {
         let mut platform = self.clone();
         let mut cache = HashMap::new();
 
@@ -142,19 +115,45 @@ impl Platform {
     }
 }
 
-fn part1(input: &str) -> i32 {
-    Platform::parse(input).tilted(Direction::N).weight()
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        let mut round_rocks: BTreeSet<Point> = BTreeSet::new();
+        let mut square_rocks: BTreeSet<Point> = BTreeSet::new();
+
+        for (y, l) in input.lines().enumerate() {
+            for (x, c) in l.chars().enumerate() {
+                if c == 'O' {
+                    round_rocks.insert(Point::new(x as i32, y as i32));
+                } else if c == '#' {
+                    square_rocks.insert(Point::new(x as i32, y as i32));
+                }
+            }
+        }
+
+        Ok(Self {
+            round_rocks,
+            square_rocks,
+            w: input.lines().next().map_or(0, |s| s.len()) as i32,
+            h: input.lines().count() as i32,
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.tilted(Direction::N).weight())
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.cycled(1000000000).weight())
+    }
 }
 
-fn part2(input: &str) -> i32 {
-    Platform::parse(input).cycled(1000000000).weight()
-}
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
-    const INPUT1: &str = "O....#....
+    const INPUT: &str = "O....#....
 O.OO#....#
 .....##...
 OO.#O....O
@@ -167,11 +166,15 @@ O.#..O.#.#
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(INPUT1), 136);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "136");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT1), 64);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "64");
     }
 }

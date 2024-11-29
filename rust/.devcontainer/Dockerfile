@@ -36,7 +36,7 @@ WORKDIR "$AOC_REPO"
 # create shellscript to conveniently call AoC runner
 RUN set -x; \
     echo "#!/bin/sh" > /usr/local/bin/aoc; \
-    echo "cd $AOC_REPO/rust && cargo run -- \$@" >> /usr/local/bin/aoc; \
+    echo "cd $AOC_REPO/rust && cargo run --release --quiet -- \$@" >> /usr/local/bin/aoc; \
     chmod +x /usr/local/bin/aoc
 
 # change user

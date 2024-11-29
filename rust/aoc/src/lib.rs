@@ -1,111 +1,97 @@
-use std::{
-    env, fs,
-    io::Write,
-    path::{Path, PathBuf},
+pub use std::{
+    collections::{HashMap, HashSet},
+    fmt,
     sync::OnceLock,
 };
 
-pub mod common;
+pub use aoc_core::{error::err, input::auto_input, Anyhow};
 
-static AOC_URL: &str = "https://adventofcode.com";
+pub use colored::Colorize;
 
-fn get_cache() -> &'static PathBuf {
-    static CACHE_PATH: OnceLock<PathBuf> = OnceLock::new();
-
-    CACHE_PATH.get_or_init(|| {
-        let path = env::current_exe()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("../../../.cache");
-
-        if !path.exists() {
-            fs::create_dir(&path).unwrap();
-        }
-
-        path
-    })
+pub trait Solver
+where
+    Self: std::marker::Sized,
+{
+    fn new(input: &str) -> Anyhow<Self>;
+    fn part1(&mut self) -> Anyhow<impl fmt::Display>;
+    fn part2(&mut self) -> Anyhow<impl fmt::Display>;
 }
 
-fn get_session() -> &'static String {
-    static SESSION: OnceLock<String> = OnceLock::new();
+pub mod __runner {
+    pub use paste::paste;
 
-    SESSION.get_or_init(|| format!("session={}", env::var("AOC_SESSION").unwrap()))
-}
+    pub fn format_time(time: std::time::Duration) -> super::Anyhow<String> {
+        let s = format!("{time:#?}");
 
-fn download_file(url: &str) -> String {
-    let response = ureq::get(url).set("Cookie", get_session()).call().unwrap();
+        let number = s
+            .chars()
+            .take_while(|c| c.is_ascii_digit() || c == &'.')
+            .collect::<String>()
+            .parse::<f64>()?;
 
-    if response.status() != 200 {
-        panic!(
-            "Response status code {}: make sure AOC_SESSION is set to a valid session",
-            response.status()
-        );
+        let shift = 10_f64.powi(4 - number.abs().log10().ceil() as i32);
+        let rounded = (number * shift).round() / shift;
+        let unit = s.chars().filter(|c| c.is_alphabetic()).collect::<String>();
+        Ok(format!("{rounded} {unit}"))
     }
 
-    response.into_string().unwrap()
-}
-
-pub fn load_input(year: u16, day: u8) -> String {
-    let file_path = get_cache().join(format!("input-{year}-{day:02}.txt"));
-
-    if !Path::new(&file_path).is_file() {
-        let url = format!("{AOC_URL}/{year}/day/{day}/input");
-        let input = download_file(&url);
-        let mut file = fs::File::create(&file_path).unwrap();
-        file.write_all(input.as_bytes()).unwrap();
-        return input;
-    }
-
-    fs::read_to_string(&file_path).unwrap()
-}
-
-pub fn auto_input(path: &str) -> String {
-    let year = path.split_once('/').unwrap().0.parse::<u16>().unwrap();
-
-    let day = path
-        .rsplit_once("day")
-        .unwrap()
-        .1
-        .strip_suffix(".rs")
-        .unwrap()
-        .parse::<u8>()
-        .unwrap();
-
-    load_input(year, day)
+    pub const RUN_TIME: std::time::Duration = std::time::Duration::from_millis(250);
 }
 
 #[macro_export]
 macro_rules! solution {
     () => {
-        $crate::solution!(2, true, true);
+        $crate::solution!(1, 2);
     };
-    ($run_part1:expr, $run_part2:expr) => {
-        $crate::solution!(2, $run_part1, $run_part2);
-    };
-    (1) => {
-        use $crate::common::*;
+    ($($part:tt),+) => {
+        use $crate::*;
 
-        fn main() {
-            let input = $crate::auto_input(file!());
-            let answer = part1(&input);
-            println!("Part 1 answer: {answer}");
-        }
-    };
-    (2, $run_part1:expr, $run_part2:expr) => {
-        use $crate::common::*;
+        fn main() -> Anyhow<()> {
+            __runner::paste! {
+                let input = auto_input(file!())?;
 
-        fn main() {
-            let input = $crate::auto_input(file!());
+                let now = std::time::Instant::now();
+                let mut solution = Solution::new(&input)?;
+                let build_duration = now.elapsed();
+                let mut total_duration = build_duration;
 
-            if $run_part1 {
-                let answer = part1(&input);
-                println!("Part 1 answer: {answer}");
-            }
+                for arg in std::env::args() {
+                    match arg.as_str() {
+                        $(
+                            concat!("--part", stringify!($part)) => {
+                                let now = std::time::Instant::now();
+                                let answer = format!("{}", solution.[<part$part>]()?);
+                                let mut duration = now.elapsed();
+                                let mut i = 1;
 
-            if $run_part2 {
-                let answer = part2(&input);
-                println!("Part 2 answer: {answer}");
+                                while now.elapsed() < __runner::RUN_TIME {
+                                    let now = std::time::Instant::now();
+                                    solution.[<part$part>]()?;
+                                    duration += now.elapsed();
+                                    i += 1
+                                }
+
+                                let duration = now.elapsed().div_f64(i as f64);
+                                total_duration += duration;
+
+                                println!(
+                                    concat!("Part ", stringify!($part), " answer: {} {}"),
+                                    answer.bold().bright_blue(),
+                                    format!("({})", __runner::format_time(duration)?).dimmed(),
+                                );
+                            }
+                        )+
+                        _ => {},
+                    }
+                }
+
+                println!("{}",
+                    format!("Build: {}  Total: {}",
+                    __runner::format_time(build_duration)?,
+                    __runner::format_time(total_duration)?,).dimmed()
+                );
+
+                Ok(())
             }
         }
     };

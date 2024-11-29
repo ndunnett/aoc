@@ -1,5 +1,3 @@
-aoc::solution!();
-
 use rayon::prelude::*;
 use regex::{Match, Regex};
 
@@ -28,64 +26,71 @@ fn parse_number(m: Match) -> i64 {
     m.as_str().parse().unwrap()
 }
 
-fn parse(input: &str) -> (Vec<i64>, Vec<Map>) {
-    let re = Regex::new(r"\d+").unwrap();
-    let mut sections = input.split("\n\n").filter(|section| !section.is_empty());
-
-    let seeds: Vec<i64> = re
-        .find_iter(sections.next().unwrap())
-        .map(parse_number)
-        .collect();
-
-    let maps: Vec<Map> = sections
-        .map(|section| Map {
-            layers: section
-                .lines()
-                .skip(1)
-                .map(|line| {
-                    let numbers: Vec<i64> = re.find_iter(line).map(parse_number).collect();
-                    Layer {
-                        start: numbers[1],
-                        end: numbers[1] + numbers[2],
-                        offset: numbers[0] - numbers[1],
-                    }
-                })
-                .collect(),
-        })
-        .collect();
-
-    (seeds, maps)
+pub struct Solution {
+    seeds: Vec<i64>,
+    maps: Vec<Map>,
 }
 
-fn part1(input: &str) -> i64 {
-    let (seeds, maps) = parse(input);
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        let re = Regex::new(r"\d+")?;
+        let mut sections = input.split("\n\n").filter(|section| !section.is_empty());
 
-    seeds
-        .par_iter()
-        .map(|&seed| maps.iter().fold(seed, |acc, m| m.transform(acc)))
-        .min()
-        .unwrap()
+        let seeds = re
+            .find_iter(sections.next().unwrap())
+            .map(parse_number)
+            .collect();
+
+        let maps = sections
+            .map(|section| Map {
+                layers: section
+                    .lines()
+                    .skip(1)
+                    .map(|line| {
+                        let numbers: Vec<i64> = re.find_iter(line).map(parse_number).collect();
+                        Layer {
+                            start: numbers[1],
+                            end: numbers[1] + numbers[2],
+                            offset: numbers[0] - numbers[1],
+                        }
+                    })
+                    .collect(),
+            })
+            .collect();
+
+        Ok(Self { seeds, maps })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self
+            .seeds
+            .par_iter()
+            .map(|&seed| self.maps.iter().fold(seed, |acc, m| m.transform(acc)))
+            .min()
+            .unwrap())
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self
+            .seeds
+            .par_chunks_exact(2)
+            .map(|seed_range| {
+                (seed_range[0]..=seed_range[0] + seed_range[1])
+                    .par_bridge()
+                    .map(|seed| self.maps.iter().fold(seed, |acc, m| m.transform(acc)))
+                    .min()
+                    .unwrap()
+            })
+            .min()
+            .unwrap())
+    }
 }
 
-fn part2(input: &str) -> i64 {
-    let (seeds, maps) = parse(input);
-
-    seeds
-        .par_chunks_exact(2)
-        .map(|seed_range| {
-            (seed_range[0]..=seed_range[0] + seed_range[1])
-                .par_bridge()
-                .map(|seed| maps.iter().fold(seed, |acc, m| m.transform(acc)))
-                .min()
-                .unwrap()
-        })
-        .min()
-        .unwrap()
-}
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
     const INPUT: &str = "seeds: 79 14 55 13
 
@@ -123,11 +128,15 @@ humidity-to-location map:
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(INPUT), 35);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "35");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT), 46);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "46");
     }
 }

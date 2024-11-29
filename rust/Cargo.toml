@@ -1,17 +1,18 @@
 [workspace]
-default-members = ["aoc"]
-members = ["aoc", "2022", "2023", "2024"]
+members = ["aoc_core", "aoc", "2022", "2023", "2024"]
+default-members = ["aoc_core"]
 resolver = "2"
 
 [workspace.dependencies]
+aoc_core = { path = "aoc_core" }
 aoc = { path = "aoc" }
 
 [profile.dev]
-codegen-units = 1
 lto = "off"
 opt-level = 0
 
 [profile.release]
+codegen-units = 1
 lto = true
 opt-level = 3
 strip = true

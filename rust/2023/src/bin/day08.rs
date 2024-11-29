@@ -1,58 +1,7 @@
-aoc::solution!();
-
-use std::collections::HashMap;
-
 use itertools::{
     FoldWhile::{Continue, Done},
     Itertools,
 };
-
-fn parse(input: &str) -> (Vec<char>, HashMap<String, (String, String)>) {
-    let mut lines = input.lines().filter(|line| !line.is_empty());
-    let instructions = lines.next().unwrap().chars().collect();
-
-    let f = |s: &str| {
-        s.chars()
-            .filter(|c| c.is_alphanumeric())
-            .collect::<String>()
-    };
-
-    let nodes = lines.fold(HashMap::new(), |mut nodes, line| {
-        if let Some((key, values)) = line.split_once('=') {
-            if let Some((left, right)) = values.split_once(',') {
-                nodes.insert(f(key), (f(left), f(right)));
-            }
-        }
-        nodes
-    });
-
-    (instructions, nodes)
-}
-
-fn part1(input: &str) -> u64 {
-    let (instructions, nodes) = parse(input);
-    let mut location = String::from("AAA");
-
-    instructions
-        .iter()
-        .cycle()
-        .fold_while(0, |steps, &instruction| {
-            let paths = nodes.get(&location).unwrap();
-
-            location = match instruction {
-                'L' => paths.0.clone(),
-                'R' => paths.1.clone(),
-                _ => panic!("invalid instruction: {}", instruction),
-            };
-
-            if location == "ZZZ" {
-                Done(steps + 1)
-            } else {
-                Continue(steps + 1)
-            }
-        })
-        .into_inner()
-}
 
 fn gcd(mut a: u64, mut b: u64) -> u64 {
     while b != 0 {
@@ -67,45 +16,103 @@ fn lcm(a: u64, b: u64) -> u64 {
     a * b / gcd(a, b)
 }
 
-fn part2(input: &str) -> u64 {
-    let (instructions, nodes) = parse(input);
+pub struct Solution {
+    instructions: Vec<char>,
+    nodes: HashMap<String, (String, String)>,
+}
 
-    let locations = nodes
-        .keys()
-        .filter(|&node| node.ends_with('A'))
-        .cloned()
-        .collect_vec();
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        let mut lines = input.lines().filter(|line| !line.is_empty());
+        let instructions = lines.next().unwrap().chars().collect();
 
-    let cycles = locations.iter().map(|start| {
-        let mut location = start.clone();
+        let f = |s: &str| {
+            s.chars()
+                .filter(|c| c.is_alphanumeric())
+                .collect::<String>()
+        };
 
-        instructions
+        let nodes = lines.fold(HashMap::new(), |mut nodes, line| {
+            if let Some((key, values)) = line.split_once('=') {
+                if let Some((left, right)) = values.split_once(',') {
+                    nodes.insert(f(key), (f(left), f(right)));
+                }
+            }
+            nodes
+        });
+
+        Ok(Self {
+            instructions,
+            nodes,
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut location = String::from("AAA");
+
+        Ok(self
+            .instructions
             .iter()
             .cycle()
             .fold_while(0, |steps, &instruction| {
-                let paths = nodes.get(&location).unwrap();
+                let paths = self.nodes.get(&location).unwrap();
 
                 location = match instruction {
                     'L' => paths.0.clone(),
                     'R' => paths.1.clone(),
-                    _ => panic!("invalid instruction: {}", instruction),
+                    _ => panic!("invalid instruction: {instruction}"),
                 };
 
-                if location.ends_with('Z') {
+                if location == "ZZZ" {
                     Done(steps + 1)
                 } else {
                     Continue(steps + 1)
                 }
             })
-            .into_inner()
-    });
+            .into_inner())
+    }
 
-    cycles.reduce(lcm).unwrap()
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        let locations = self
+            .nodes
+            .keys()
+            .filter(|&node| node.ends_with('A'))
+            .cloned()
+            .collect_vec();
+
+        let cycles = locations.iter().map(|start| {
+            let mut location = start.clone();
+
+            self.instructions
+                .iter()
+                .cycle()
+                .fold_while(0, |steps, &instruction| {
+                    let paths = self.nodes.get(&location).unwrap();
+
+                    location = match instruction {
+                        'L' => paths.0.clone(),
+                        'R' => paths.1.clone(),
+                        _ => panic!("invalid instruction: {}", instruction),
+                    };
+
+                    if location.ends_with('Z') {
+                        Done(steps + 1)
+                    } else {
+                        Continue(steps + 1)
+                    }
+                })
+                .into_inner()
+        });
+
+        Ok(cycles.reduce(lcm).unwrap())
+    }
 }
+
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
     const INPUT1: &str = "RL
 
@@ -135,13 +142,23 @@ ZZZ = (ZZZ, ZZZ)";
 XXX = (XXX, XXX)";
 
     #[test]
-    fn test_part1() {
-        assert_eq!(part1(INPUT1), 2);
-        assert_eq!(part1(INPUT2), 6);
+    fn test_part1_1() {
+        let mut solution = Solution::new(INPUT1).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "2");
+    }
+
+    #[test]
+    fn test_part1_2() {
+        let mut solution = Solution::new(INPUT2).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "6");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT3), 6);
+        let mut solution = Solution::new(INPUT3).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "6");
     }
 }

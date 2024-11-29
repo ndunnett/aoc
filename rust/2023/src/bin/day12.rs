@@ -1,7 +1,3 @@
-aoc::solution!();
-
-use std::collections::HashMap;
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 enum Condition {
     Operational,
@@ -98,22 +94,37 @@ impl Record {
     }
 }
 
-fn part1(input: &str) -> usize {
-    input.lines().map(|l| Record::parse(l).solve()).sum()
+pub struct Solution {
+    records: Vec<Record>,
 }
 
-fn part2(input: &str) -> usize {
-    input
-        .lines()
-        .map(|l| Record::parse(l).unfolded(5).solve())
-        .sum()
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        Ok(Self {
+            records: input.lines().map(Record::parse).collect(),
+        })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self.records.iter().map(Record::solve).sum::<usize>())
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self
+            .records
+            .iter()
+            .map(|r| r.unfolded(5).solve())
+            .sum::<usize>())
+    }
 }
+
+aoc::solution!();
 
 #[cfg(test)]
 mod test {
-    use super::{part1, part2};
+    use super::{Solution, Solver};
 
-    const INPUT1: &str = "???.### 1,1,3
+    const INPUT: &str = "???.### 1,1,3
 .??..??...?##. 1,1,3
 ?#?#?#?#?#?#?#? 1,3,1,6
 ????.#...#... 4,1,1
@@ -122,11 +133,15 @@ mod test {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(INPUT1), 21);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "21");
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(INPUT1), 525152);
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "525152");
     }
 }
