@@ -13,12 +13,13 @@ Options:
   -y, --year <YEAR>  Year of the puzzle to select
   -d, --day <DAY>    Day of the puzzle to select
   -p, --part <PART>  Part of the puzzle to select (omit to run all parts)
-  -r, --run          Run solution on selected puzzle
-  -t, --test         Run tests for selected puzzle
-  -i, --input        Print puzzle input
-  -n, --new          Start new puzzle from template
-  -o, --open         Open puzzle page in browser
+  -r, --run          Run the selected puzzle (default if no other options are provided)
       --release      Run in release mode
+  -t, --test         Run tests for the selected puzzle
+  -i, --input        Print the selected puzzle input
+  -n, --new          Start new puzzle from template
+      --no-cache     Force redownloading the input and overwrite the cached file
+  -o, --open         Open the selected puzzle page in browser
   -h, --help         Print help
   -V, --version      Print version
 ```
@@ -28,8 +29,8 @@ Options:
 
 ### Automation Compliance
 
-All automation impacting Advent of Code servers follows the [automation guidelines](https://www.reddit.com/r/adventofcode/wiki/faqs/automation), see [`input.rs`](/rust/aoc_core/src/input.rs) for implementation.
+All automated functionality impacting the Advent of Code servers follows the [automation guidelines](https://www.reddit.com/r/adventofcode/wiki/faqs/automation), see [`lib.rs`](/rust/aoc_core/src/lib.rs) for implementation.
 
-* Input files are cached to a local directory
+* Input files are cached to a local directory and ignored by source control
 * The request user agent is set to `github.com/ndunnett/aoc/rust`
 * Outbound calls are limited to 5 requests per 15 minutes

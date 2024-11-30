@@ -1,5 +1,3 @@
-use itertools::Itertools;
-
 fn decompose(mut components: Vec<Vec<i32>>) -> Vec<Vec<i32>> {
     let last = components.last().unwrap();
 
@@ -18,7 +16,7 @@ fn predict(history: Vec<i32>) -> i32 {
         .sum()
 }
 
-pub struct Solution {
+struct Solution {
     grid: Vec<Vec<i32>>,
 }
 

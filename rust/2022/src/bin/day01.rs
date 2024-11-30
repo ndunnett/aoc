@@ -1,4 +1,4 @@
-pub struct Solution {
+struct Solution {
     reindeer: Vec<u32>,
 }
 
@@ -20,7 +20,7 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        self.reindeer.iter().max().ok_or(err("empty input"))
+        self.reindeer.iter().max().ok_or(anyhow!("empty input"))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {

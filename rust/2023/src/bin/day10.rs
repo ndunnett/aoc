@@ -1,7 +1,5 @@
 use std::ops::Add;
 
-use itertools::Itertools;
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 struct Point {
     x: i32,
@@ -60,7 +58,7 @@ impl Tile {
     }
 }
 
-pub struct Solution {
+struct Solution {
     maze: HashMap<Point, Pipe>,
 }
 

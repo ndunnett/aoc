@@ -1,5 +1,3 @@
-use regex::Regex;
-
 fn parse_stacks(input: &str) -> HashMap<i32, Vec<char>> {
     let mut stacks = HashMap::new();
 
@@ -45,7 +43,7 @@ fn parse_command(line: &str) -> (i32, i32, i32) {
     )
 }
 
-pub struct Solution {
+struct Solution {
     input: String,
 }
 

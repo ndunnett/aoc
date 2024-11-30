@@ -1,11 +1,9 @@
-use itertools::Itertools;
-
 struct Point {
     x: usize,
     y: usize,
 }
 
-pub struct Solution {
+struct Solution {
     uni: Vec<Point>,
 }
 

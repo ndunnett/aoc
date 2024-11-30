@@ -1,7 +1,4 @@
-use itertools::{
-    FoldWhile::{Continue, Done},
-    Itertools,
-};
+use itertools::FoldWhile::{Continue, Done};
 
 fn gcd(mut a: u64, mut b: u64) -> u64 {
     while b != 0 {
@@ -16,7 +13,7 @@ fn lcm(a: u64, b: u64) -> u64 {
     a * b / gcd(a, b)
 }
 
-pub struct Solution {
+struct Solution {
     instructions: Vec<char>,
     nodes: HashMap<String, (String, String)>,
 }

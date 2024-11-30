@@ -1,7 +1,5 @@
 use std::ops::Add;
 
-use rayon::prelude::*;
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 enum Direction {
     N,
@@ -51,7 +49,7 @@ impl Tile {
     }
 }
 
-pub struct Solution {
+struct Solution {
     contraption: HashMap<Point, Tile>,
 }
 

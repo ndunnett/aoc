@@ -4,9 +4,16 @@ pub use std::{
     sync::OnceLock,
 };
 
-pub use aoc_core::{error::err, input::auto_input, Anyhow};
+pub type ParseIntResult<T> = Result<T, std::num::ParseIntError>;
+pub type ParseFloatResult<T> = Result<T, std::num::ParseFloatError>;
 
+pub use anyhow::{anyhow, Error};
 pub use colored::Colorize;
+pub use itertools::{self, Itertools};
+pub use rayon::prelude::*;
+pub use regex::{self, Regex};
+
+pub type Anyhow<T> = anyhow::Result<T>;
 
 pub trait Solver
 where
@@ -19,6 +26,7 @@ where
 
 pub mod __runner {
     pub use paste::paste;
+    pub use aoc_core::auto_input;    
 
     pub fn format_time(time: std::time::Duration) -> super::Anyhow<String> {
         let s = format!("{time:#?}");
@@ -38,6 +46,32 @@ pub mod __runner {
     pub const RUN_TIME: std::time::Duration = std::time::Duration::from_millis(250);
 }
 
+/// Generates a main function for the runner to call and includes commonly used imports.
+///
+/// Standard library imports:
+/// ```
+/// pub use std::{
+///     collections::{HashMap, HashSet},
+///     fmt,
+///     sync::OnceLock,
+/// };
+/// ```
+///
+/// Third party imports:
+/// ```
+/// pub use anyhow::{anyhow, Error};
+/// pub use colored::Colorize;
+/// pub use itertools::{self, Itertools};
+/// pub use rayon::prelude::*;
+/// pub use regex::{self, Regex};
+/// ```
+///
+/// Type definitions:
+/// ```
+/// pub type ParseIntResult<T> = Result<T, std::num::ParseIntError>;
+/// pub type ParseFloatResult<T> = Result<T, std::num::ParseFloatError>;
+/// pub type Anyhow<T> = anyhow::Result<T>;
+/// ```
 #[macro_export]
 macro_rules! solution {
     () => {
@@ -48,7 +82,7 @@ macro_rules! solution {
 
         fn main() -> Anyhow<()> {
             __runner::paste! {
-                let input = auto_input(file!())?;
+                let input = __runner::auto_input(file!())?;
 
                 let now = std::time::Instant::now();
                 let mut solution = Solution::new(&input)?;

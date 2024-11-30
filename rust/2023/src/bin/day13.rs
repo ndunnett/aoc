@@ -103,7 +103,7 @@ impl Mirror {
     }
 }
 
-pub struct Solution {
+struct Solution {
     mirrors: Vec<Mirror>,
 }
 

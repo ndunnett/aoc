@@ -4,7 +4,7 @@ enum Moves {
     Scissors,
 }
 
-pub struct Solution {
+struct Solution {
     lines: Vec<String>,
 }
 
@@ -21,18 +21,18 @@ impl Solver for Solution {
         let mut my_move: Moves;
 
         for line in self.lines.iter() {
-            match line.chars().next().ok_or(err("ran out of chars"))? {
+            match line.chars().next().ok_or(anyhow!("ran out of chars"))? {
                 'A' => opp_move = Moves::Rock,
                 'B' => opp_move = Moves::Paper,
                 'C' => opp_move = Moves::Scissors,
-                _ => return Err(err("failed to match opp_move")),
+                _ => return Err(anyhow!("failed to match opp_move")),
             }
 
-            match line.chars().nth(2).ok_or(err("ran out of chars"))? {
+            match line.chars().nth(2).ok_or(anyhow!("ran out of chars"))? {
                 'X' => my_move = Moves::Rock,
                 'Y' => my_move = Moves::Paper,
                 'Z' => my_move = Moves::Scissors,
-                _ => return Err(err("failed to match my_move")),
+                _ => return Err(anyhow!("failed to match my_move")),
             }
 
             match my_move {
@@ -62,14 +62,14 @@ impl Solver for Solution {
         let mut opp_move: Moves;
 
         for line in self.lines.iter() {
-            match line.chars().next().ok_or(err("ran out of chars"))? {
+            match line.chars().next().ok_or(anyhow!("ran out of chars"))? {
                 'A' => opp_move = Moves::Rock,
                 'B' => opp_move = Moves::Paper,
                 'C' => opp_move = Moves::Scissors,
-                _ => return Err(err("failed to match opp_move")),
+                _ => return Err(anyhow!("failed to match opp_move")),
             }
 
-            match line.chars().nth(2).ok_or(err("ran out of chars"))? {
+            match line.chars().nth(2).ok_or(anyhow!("ran out of chars"))? {
                 'X' => match opp_move {
                     Moves::Rock => score += 3,
                     Moves::Paper => score += 1,
@@ -85,7 +85,7 @@ impl Solver for Solution {
                     Moves::Paper => score += 9,
                     Moves::Scissors => score += 7,
                 },
-                _ => return Err(err("failed to match my_move")),
+                _ => return Err(anyhow!("failed to match my_move")),
             }
         }
 

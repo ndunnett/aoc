@@ -94,7 +94,7 @@ impl Record {
     }
 }
 
-pub struct Solution {
+struct Solution {
     records: Vec<Record>,
 }
 

@@ -6,13 +6,29 @@ resolver = "2"
 [workspace.dependencies]
 aoc_core = { path = "aoc_core" }
 aoc = { path = "aoc" }
+anyhow = "1.0.93"
 
 [profile.dev]
-lto = "off"
+lto = "thin"
 opt-level = 0
+
+[profile.dev.package."*"]
+codegen-units = 1
+opt-level = 3
+strip = true
+
+[profile.dev.package.aoc]
+codegen-units = 1
+opt-level = 3
+strip = true
+
+[profile.dev.package.aoc_core]
+codegen-units = 1
+opt-level = 3
+strip = true
 
 [profile.release]
 codegen-units = 1
-lto = true
+lto = "fat"
 opt-level = 3
 strip = true

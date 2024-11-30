@@ -15,10 +15,10 @@ fn get_unique_packet(signal: &str, length: usize) -> Anyhow<usize> {
         }
     }
 
-    Err(err("failed to find unique packet"))
+    Err(anyhow!("failed to find unique packet"))
 }
 
-pub struct Solution {
+struct Solution {
     input: String,
 }
 

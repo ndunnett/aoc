@@ -3,8 +3,6 @@ use std::{
     hash::{DefaultHasher, Hasher},
 };
 
-use itertools::Itertools;
-
 fn hash<S: AsRef<str>>(s: S) -> usize {
     s.as_ref()
         .chars()
@@ -38,7 +36,7 @@ impl Lens {
     }
 }
 
-pub struct Solution {
+struct Solution {
     elements: Vec<String>,
 }
 

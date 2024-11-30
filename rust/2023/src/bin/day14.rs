@@ -29,7 +29,7 @@ impl Add for Point {
 }
 
 #[derive(Debug, Clone)]
-pub struct Solution {
+struct Solution {
     round_rocks: BTreeSet<Point>,
     square_rocks: BTreeSet<Point>,
     w: i32,

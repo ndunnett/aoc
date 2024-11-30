@@ -6,11 +6,7 @@ use std::{
 
 use clap::Parser;
 
-use aoc_core::{
-    error::err_blank,
-    input::{delete_cached_input, load_input},
-    Anyhow, AOC_URL,
-};
+use aoc_core::{delete_cached_input, load_input, AOC_URL};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -24,10 +20,10 @@ pub struct Cli {
     day: u8,
 
     /// Part of the puzzle to select (omit to run all parts)
-    #[arg(short, long, value_parser = clap::value_parser!(u8).range(1..=2))]
+    #[arg(short, long, requires = "exec", value_parser = clap::value_parser!(u8).range(1..=2))]
     part: Option<u8>,
 
-    /// Run solution on selected puzzle
+    /// Run the selected puzzle (default if no other options are provided)
     #[arg(short, long, group = "exec")]
     run: bool,
 
@@ -35,28 +31,38 @@ pub struct Cli {
     #[arg(long, requires = "exec")]
     release: bool,
 
-    /// Run tests for selected puzzle
+    /// Run tests for the selected puzzle
     #[arg(short, long, group = "exec")]
     test: bool,
 
-    /// Print puzzle input
+    /// Print the selected puzzle input
     #[arg(short, long)]
     input: bool,
 
     /// Start new puzzle from template
-    #[arg(short, long)]
+    #[arg(short, long, group = "exec")]
     new: bool,
 
-    /// Force redownloading input and overwriting cache
+    /// Force redownloading the input and overwrite the cached file
     #[arg(long)]
     no_cache: bool,
 
-    /// Open puzzle page in browser
+    /// Open the selected puzzle page in browser
     #[arg(short, long)]
     open: bool,
 }
 
-fn main() -> Anyhow<()> {
+fn main() -> ! {
+    match cli() {
+        Ok(_) => std::process::exit(0),
+        Err(e) => {
+            eprint!("{e}");
+            std::process::exit(1)
+        }
+    }
+}
+
+fn cli() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     if cli.no_cache {
@@ -87,7 +93,7 @@ fn main() -> Anyhow<()> {
     Ok(())
 }
 
-fn run(year: u16, day: u8, part: Option<u8>, release: bool, test: bool) -> Anyhow<()> {
+fn run(year: u16, day: u8, part: Option<u8>, release: bool, test: bool) -> anyhow::Result<()> {
     let mut args = vec![
         (if test { "test" } else { "run" }).to_string(),
         "--package".to_string(),
@@ -123,11 +129,11 @@ fn run(year: u16, day: u8, part: Option<u8>, release: bool, test: bool) -> Anyho
     if exit_status.success() {
         Ok(())
     } else {
-        Err(err_blank())
+        Err(anyhow::anyhow!(""))
     }
 }
 
-fn make_new(year: u16, day: u8) -> Anyhow<()> {
+fn make_new(year: u16, day: u8) -> anyhow::Result<()> {
     let cwd = env::current_dir()?;
     let directory = cwd.join(format!("{year}/src/bin"));
 
@@ -143,7 +149,7 @@ fn make_new(year: u16, day: u8) -> Anyhow<()> {
         fs::copy(&path, backup_path)?;
     }
 
-    let bytes = include_bytes!("template.rs");
+    let bytes = include_bytes!("../template.rs");
     let mut file = fs::File::create(path)?;
     file.write_all(bytes)?;
 

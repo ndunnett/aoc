@@ -6,7 +6,7 @@ fn get_priority(char: char) -> i32 {
     }
 }
 
-pub struct Solution {
+struct Solution {
     input: String,
 }
 
@@ -38,19 +38,23 @@ impl Solver for Solution {
         let mut priorities = 0;
 
         for i in (0..self.input.lines().count()).step_by(3) {
-            let line_1 = self.input.lines().nth(i).ok_or(err("ran out of lines"))?;
+            let line_1 = self
+                .input
+                .lines()
+                .nth(i)
+                .ok_or(anyhow!("ran out of lines"))?;
 
             let line_2 = self
                 .input
                 .lines()
                 .nth(i + 1)
-                .ok_or(err("ran out of lines"))?;
+                .ok_or(anyhow!("ran out of lines"))?;
 
             let line_3 = self
                 .input
                 .lines()
                 .nth(i + 2)
-                .ok_or(err("ran out of lines"))?;
+                .ok_or(anyhow!("ran out of lines"))?;
 
             for char in line_1.chars() {
                 if line_2.contains(char) && line_3.contains(char) {
