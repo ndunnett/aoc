@@ -2,7 +2,17 @@
 
 ## Solutions
 
-So far these are only old solutions merged in from old repos.
+### 2023
+
+* [Day 1: Trebuchet?!](/rust/2023/day01.py)
+* [Day 2: Cube Conundrum](/rust/2023/day02.py)
+* [Day 3: Gear Ratios](/rust/2023/day03.py)
+* [Day 4: Scratchcards](/rust/2023/day04.py)
+* [Day 5: If You Give A Seed A Fertilizer](/rust/2023/day05.py)
+* [Day 6: Wait For It](/rust/2023/day06.py)
+* [Day 7: Camel Cards](/rust/2023/day07.py)
+
+Other solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
 
 ## Runner
 

@@ -1,88 +1,114 @@
-use rayon::prelude::*;
-use regex::{Match, Regex};
+fn parse_numbers<S: AsRef<str>>(s: S) -> Anyhow<Vec<i64>> {
+    s.as_ref()
+        .split_whitespace()
+        .map(|n| Ok(n.parse::<i64>()?))
+        .collect::<Anyhow<Vec<_>>>()
+}
 
-#[derive(Debug, Clone)]
 struct Layer {
     start: i64,
     end: i64,
     offset: i64,
 }
 
-#[derive(Debug, Clone)]
-struct Map {
-    layers: Vec<Layer>,
-}
+impl TryFrom<&str> for Layer {
+    type Error = Error;
 
-impl Map {
-    fn transform(&self, seed: i64) -> i64 {
-        self.layers
-            .iter()
-            .find(|layer| layer.start <= seed && layer.end > seed)
-            .map_or(seed, |layer| seed + layer.offset)
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let numbers = parse_numbers(s)?;
+
+        // [0] -> destination
+        // [1] -> source
+        // [2] -> length
+
+        Ok(Self {
+            start: numbers[1],
+            end: numbers[1] + numbers[2],
+            offset: numbers[0] - numbers[1],
+        })
     }
 }
 
-fn parse_number(m: Match) -> i64 {
-    m.as_str().parse().unwrap()
+struct Solution {
+    seeds: Vec<i64>,
+    maps: Vec<Vec<Layer>>,
 }
 
-pub struct Solution {
-    seeds: Vec<i64>,
-    maps: Vec<Map>,
+impl Solution {
+    fn transform(&self, seed: i64) -> i64 {
+        self.maps.iter().fold(seed, |acc, map| {
+            map.iter()
+                .find(|layer| layer.start <= acc && acc < layer.end)
+                .map_or(acc, |layer| acc + layer.offset)
+        })
+    }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let re = Regex::new(r"\d+")?;
         let mut sections = input.split("\n\n").filter(|section| !section.is_empty());
 
-        let seeds = re
-            .find_iter(sections.next().unwrap())
-            .map(parse_number)
-            .collect();
+        let seeds = parse_numbers(
+            sections
+                .next()
+                .ok_or(anyhow!("empty input"))?
+                .split_once(':')
+                .ok_or(anyhow!("failed to split seeds"))?
+                .1,
+        )?;
 
         let maps = sections
-            .map(|section| Map {
-                layers: section
+            .map(|section| {
+                section
                     .lines()
                     .skip(1)
-                    .map(|line| {
-                        let numbers: Vec<i64> = re.find_iter(line).map(parse_number).collect();
-                        Layer {
-                            start: numbers[1],
-                            end: numbers[1] + numbers[2],
-                            offset: numbers[0] - numbers[1],
-                        }
-                    })
-                    .collect(),
+                    .map(Layer::try_from)
+                    .collect::<Anyhow<Vec<_>>>()
             })
-            .collect();
+            .collect::<Anyhow<Vec<_>>>()?;
 
         Ok(Self { seeds, maps })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .seeds
-            .par_iter()
-            .map(|&seed| self.maps.iter().fold(seed, |acc, m| m.transform(acc)))
+        self.seeds
+            .iter()
+            .map(|&seed| self.transform(seed))
             .min()
-            .unwrap())
+            .ok_or(anyhow!("no seeds"))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .seeds
+        self.seeds
             .par_chunks_exact(2)
             .map(|seed_range| {
-                (seed_range[0]..=seed_range[0] + seed_range[1])
-                    .par_bridge()
-                    .map(|seed| self.maps.iter().fold(seed, |acc, m| m.transform(acc)))
-                    .min()
-                    .unwrap()
+                let mut queue = vec![(seed_range[0], seed_range[1])];
+
+                while let Some((start, len)) = queue.pop() {
+                    if len < 15 {
+                        return (0..len)
+                            .map(|i| self.transform(start + i))
+                            .min()
+                            .expect("should never panic here");
+                    }
+
+                    let step = len / 2;
+                    let mid = start + step;
+                    let mid_location = self.transform(mid);
+
+                    if self.transform(start) + step != mid_location {
+                        queue.push((start, step));
+                    }
+
+                    if self.transform(start + len) != mid_location + len - step {
+                        queue.push((mid, len - step));
+                    }
+                }
+
+                i64::MAX
             })
             .min()
-            .unwrap())
+            .ok_or(anyhow!("failed to find seed"))
     }
 }
 

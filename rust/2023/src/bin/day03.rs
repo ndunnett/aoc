@@ -1,99 +1,149 @@
-use regex::Regex;
-
-fn get_edges(i: usize, j: usize) -> [(usize, usize); 8] {
-    [
-        (i.saturating_sub(1), j.saturating_sub(1)),
-        (i.saturating_sub(1), j),
-        (i.saturating_sub(1), j + 1),
-        (i, j.saturating_sub(1)),
-        (i, j + 1),
-        (i + 1, j.saturating_sub(1)),
-        (i + 1, j),
-        (i + 1, j + 1),
-    ]
+struct Symbol {
+    value: char,
+    row: usize,
+    col: usize,
 }
 
-pub struct Solution {
-    lines: Vec<String>,
+struct Number {
+    value: u32,
+    top: usize,
+    bottom: usize,
+    left: usize,
+    right: usize,
+}
+
+impl Number {
+    fn collision(&self, symbol: &Symbol) -> bool {
+        self.left <= symbol.col
+            && symbol.col <= self.right
+            && self.top <= symbol.row
+            && symbol.row <= self.bottom
+    }
+}
+
+struct Solution {
+    numbers: Vec<Number>,
+    symbols: Vec<Symbol>,
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        Ok(Self {
-            lines: input.lines().map(String::from).collect(),
-        })
-    }
+        let mut numbers = Vec::new();
+        let mut symbols = Vec::new();
+        let mut chars = input.chars().peekable();
+        let mut row: usize = 1;
+        let mut column: usize = 1;
 
-    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut sum = 0;
-        let symbol_re = Regex::new(r"[^\d.]")?;
-        let number_re = Regex::new(r"\d+")?;
+        while let Some(next) = chars.next() {
+            column += 1;
 
-        let symbols_vec: Vec<Vec<usize>> = self
-            .lines
-            .iter()
-            .map(|line| symbol_re.find_iter(line).map(|m| m.start()).collect())
-            .collect();
-
-        for (i, line) in self.lines.iter().enumerate() {
-            sum += number_re
-                .find_iter(line)
-                .filter(|m| {
-                    symbols_vec
-                        .iter()
-                        .skip(i.saturating_sub(1))
-                        .take(3)
-                        .any(|symbols| {
-                            symbols
-                                .iter()
-                                .any(|&pos| (m.start().saturating_sub(1)..=m.end()).contains(&pos))
-                        })
-                })
-                .map(|m| m.as_str().parse::<u32>().unwrap())
-                .sum::<u32>();
-        }
-
-        Ok(sum)
-    }
-
-    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut sum = 0;
-        let gear_re = Regex::new(r"\*")?;
-        let number_re = Regex::new(r"\d+")?;
-
-        let numbers_vec = self
-            .lines
-            .iter()
-            .map(|line| {
-                number_re
-                    .find_iter(line)
-                    .map(|m| (m.range(), m.as_str().parse::<u32>().unwrap()))
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-
-        for (i, line) in self.lines.iter().enumerate() {
-            for m in gear_re.find_iter(line) {
-                let edges = get_edges(i, m.start());
-                let gear_numbers = edges
-                    .iter()
-                    .flat_map(|(x, y)| {
-                        numbers_vec.get(*x).and_then(|vec| {
-                            vec.iter()
-                                .find(|(range, _)| *y >= range.start && *y < range.end)
-                                .map(|(_, number)| *number)
-                        })
-                    })
-                    .collect::<HashSet<_>>();
-
-                if gear_numbers.len() == 2 {
-                    sum += gear_numbers.iter().product::<u32>();
+            match next {
+                '\n' => {
+                    row += 1;
+                    column = 1;
                 }
+                c if c.is_ascii_digit() => {
+                    let mut val = vec![c];
+                    let start = column - 2;
+
+                    while let Some(peek) = chars.peek() {
+                        if peek.is_ascii_digit() {
+                            val.push(*peek);
+                            chars.next();
+                            column += 1;
+                        } else {
+                            numbers.push(Number {
+                                value: val.into_iter().collect::<String>().parse()?,
+                                top: row - 1,
+                                bottom: row + 1,
+                                left: start,
+                                right: column,
+                            });
+                            break;
+                        }
+                    }
+                }
+                '-' | '@' | '*' | '+' | '$' | '#' | '&' | '=' | '%' | '/' => {
+                    symbols.push(Symbol {
+                        value: next,
+                        row,
+                        col: column - 1,
+                    });
+                }
+                _ => {}
             }
         }
 
-        Ok(sum)
+        Ok(Self { numbers, symbols })
+    }
+
+    fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self
+            .numbers
+            .par_iter()
+            .filter_map(|number| {
+                for symbol in &self.symbols {
+                    if number.collision(symbol) {
+                        return Some(number.value);
+                    }
+                }
+
+                None
+            })
+            .sum::<u32>())
+    }
+
+    fn part2(&mut self) -> Anyhow<impl fmt::Display> {
+        Ok(self
+            .symbols
+            .par_iter()
+            .filter(|symbol| symbol.value == '*')
+            .filter_map(|gear| {
+                let touching = self
+                    .numbers
+                    .iter()
+                    .filter(|number| number.collision(gear))
+                    .take(2)
+                    .collect_tuple();
+
+                if let Some((a, b)) = touching {
+                    Some(a.value * b.value)
+                } else {
+                    None
+                }
+            })
+            .sum::<u32>())
     }
 }
 
 aoc::solution!();
+
+#[cfg(test)]
+mod test {
+    use super::{Solution, Solver};
+
+    const INPUT: &str = r"467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..";
+
+    #[test]
+    fn test_part1() {
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "4361");
+    }
+
+    #[test]
+    fn test_part2() {
+        let mut solution = Solution::new(INPUT).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "467835");
+    }
+}

@@ -1,25 +1,25 @@
-use regex::Regex;
+fn solve(line: &str) -> u32 {
+    let numbers = line
+        .chars()
+        .filter_map(|c| c.to_digit(10))
+        .collect::<Vec<_>>();
 
-fn parse_caps(m: &str) -> u32 {
-    match m {
-        "one" | "1" => 1,
-        "two" | "2" => 2,
-        "three" | "3" => 3,
-        "four" | "4" => 4,
-        "five" | "5" => 5,
-        "six" | "6" => 6,
-        "seven" | "7" => 7,
-        "eight" | "8" => 8,
-        "nine" | "9" => 9,
-        _ => panic!("invalid match"),
-    }
+    numbers[0] * 10 + numbers[numbers.len() - 1]
 }
 
-fn rev(input: &str) -> String {
-    input.chars().rev().collect::<String>()
+fn replace_numbers(line: &str) -> String {
+    line.replace("one", "o1e")
+        .replace("two", "t2o")
+        .replace("three", "t3e")
+        .replace("four", "f4r")
+        .replace("five", "f5e")
+        .replace("six", "s6x")
+        .replace("seven", "s7n")
+        .replace("eight", "e8t")
+        .replace("nine", "n9e")
 }
 
-pub struct Solution {
+struct Solution {
     lines: Vec<String>,
 }
 
@@ -31,43 +31,48 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut sum = 0;
-        let re = Regex::new(r"\d")?;
-
-        for line in self.lines.iter() {
-            let numbers: Vec<u32> = re
-                .find_iter(line)
-                .map(|m| m.as_str().parse().unwrap())
-                .collect();
-            sum += numbers[0] * 10 + numbers[numbers.len() - 1];
-        }
-
-        Ok(sum)
+        Ok(self.lines.iter().fold(0, |acc, line| acc + solve(line)))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut sum = 0;
-        let pattern = "one|two|three|four|five|six|seven|eight|nine";
-        let re_first = Regex::new(format!("(\\d|{})", pattern).as_str())?;
-        let re_last = Regex::new(format!("(\\d|{})", rev(pattern)).as_str())?;
-
-        for line in self.lines.iter() {
-            // disgusting
-            let first = parse_caps(re_first.captures(line).unwrap().get(0).unwrap().as_str());
-            let last = parse_caps(
-                rev(re_last
-                    .captures(rev(line).as_str())
-                    .unwrap()
-                    .get(0)
-                    .unwrap()
-                    .as_str())
-                .as_str(),
-            );
-            sum += first * 10 + last;
-        }
-
-        Ok(sum)
+        Ok(self
+            .lines
+            .iter()
+            .map(|line| replace_numbers(line))
+            .fold(0, |acc, line| acc + solve(&line)))
     }
 }
 
 aoc::solution!();
+
+#[cfg(test)]
+mod test {
+    use super::{Solution, Solver};
+
+    const INPUT1: &str = r"1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet";
+
+    const INPUT2: &str = r"two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen";
+
+    #[test]
+    fn test_part1() {
+        let mut solution = Solution::new(INPUT1).unwrap();
+        let answer = solution.part1().unwrap().to_string();
+        assert_eq!(answer, "142");
+    }
+
+    #[test]
+    fn test_part2() {
+        let mut solution = Solution::new(INPUT2).unwrap();
+        let answer = solution.part2().unwrap().to_string();
+        assert_eq!(answer, "281");
+    }
+}
