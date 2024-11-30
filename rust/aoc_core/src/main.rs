@@ -63,7 +63,7 @@ fn main() -> Anyhow<()> {
         delete_cached_input(cli.year, cli.day)?;
     }
 
-    if cli.run || (!cli.new && !cli.input && !cli.open) {
+    if cli.run || (!cli.test && !cli.new && !cli.input && !cli.open) {
         run(cli.year, cli.day, cli.part, cli.release, false)?;
     }
 
@@ -100,14 +100,16 @@ fn run(year: u16, day: u8, part: Option<u8>, release: bool, test: bool) -> Anyho
         args.push("--release".to_string());
     }
 
-    args.push("--".to_string());
+    if !test {
+        args.push("--".to_string());
 
-    match part {
-        Some(1) => args.push("--part1".to_string()),
-        Some(2) => args.push("--part2".to_string()),
-        _ => {
-            args.push("--part1".to_string());
-            args.push("--part2".to_string());
+        match part {
+            Some(1) => args.push("--part1".to_string()),
+            Some(2) => args.push("--part2".to_string()),
+            _ => {
+                args.push("--part1".to_string());
+                args.push("--part2".to_string());
+            }
         }
     }
 
