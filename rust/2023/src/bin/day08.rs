@@ -13,7 +13,6 @@ fn lcm(a: usize, b: usize) -> usize {
     a * b / gcd
 }
 
-#[derive(Clone, Copy)]
 enum Instruction {
     Left,
     Right,
@@ -29,7 +28,7 @@ impl From<char> for Instruction {
     }
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq, Hash)]
 struct Element(u32);
 
 impl Element {
@@ -39,32 +38,6 @@ impl Element {
 
     fn ends_with(&self, char: char) -> bool {
         self.0 as u8 == char as u8
-    }
-}
-
-impl From<&[char]> for Element {
-    fn from(value: &[char]) -> Self {
-        Self::const_from(value)
-    }
-}
-
-impl fmt::Debug for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let chars = [
-            ((self.0 >> 16) & (u8::MAX as u32)) as u8 as char,
-            ((self.0 >> 8) & (u8::MAX as u32)) as u8 as char,
-            (self.0 & (u8::MAX as u32)) as u8 as char,
-        ]
-        .iter()
-        .collect::<String>();
-
-        f.write_str(&chars)
-    }
-}
-
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("{:?}", self))
     }
 }
 
@@ -89,8 +62,11 @@ impl Solver for Solution {
                 let chars = line.chars().collect_vec();
 
                 (
-                    Element::from(&chars[0..3]),
-                    (Element::from(&chars[7..10]), Element::from(&chars[12..15])),
+                    Element::const_from(&chars[0..3]),
+                    (
+                        Element::const_from(&chars[7..10]),
+                        Element::const_from(&chars[12..15]),
+                    ),
                 )
             })
             .collect();
