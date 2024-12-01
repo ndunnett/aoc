@@ -9,7 +9,7 @@ aoc = { path = "aoc" }
 anyhow = "1.0.93"
 
 [profile.dev]
-lto = "thin"
+lto = "off"
 opt-level = 0
 
 [profile.dev.package."*"]
