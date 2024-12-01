@@ -1,42 +1,99 @@
-use itertools::FoldWhile::{Continue, Done};
+const AAA: Element = Element::const_from(&['A', 'A', 'A']);
+const ZZZ: Element = Element::const_from(&['Z', 'Z', 'Z']);
 
-fn gcd(mut a: u64, mut b: u64) -> u64 {
-    while b != 0 {
-        a %= b;
-        std::mem::swap(&mut a, &mut b);
+fn lcm(a: usize, b: usize) -> usize {
+    let mut gcd = a;
+    let mut den = b;
+
+    while den != 0 {
+        gcd %= den;
+        std::mem::swap(&mut gcd, &mut den);
     }
 
-    a
+    a * b / gcd
 }
 
-fn lcm(a: u64, b: u64) -> u64 {
-    a * b / gcd(a, b)
+#[derive(Clone, Copy)]
+enum Instruction {
+    Left,
+    Right,
+}
+
+impl From<char> for Instruction {
+    fn from(value: char) -> Self {
+        match value {
+            'L' => Self::Left,
+            'R' => Self::Right,
+            _ => panic!("failed to parse instruction"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+struct Element(u32);
+
+impl Element {
+    const fn const_from(value: &[char]) -> Self {
+        Self((value[0] as u32) << 16 | (value[1] as u32) << 8 | value[2] as u32)
+    }
+
+    fn ends_with(&self, char: char) -> bool {
+        self.0 as u8 == char as u8
+    }
+}
+
+impl From<&[char]> for Element {
+    fn from(value: &[char]) -> Self {
+        Self::const_from(value)
+    }
+}
+
+impl fmt::Debug for Element {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let chars = [
+            ((self.0 >> 16) & (u8::MAX as u32)) as u8 as char,
+            ((self.0 >> 8) & (u8::MAX as u32)) as u8 as char,
+            (self.0 & (u8::MAX as u32)) as u8 as char,
+        ]
+        .iter()
+        .collect::<String>();
+
+        f.write_str(&chars)
+    }
+}
+
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{:?}", self))
+    }
 }
 
 struct Solution {
-    instructions: Vec<char>,
-    nodes: HashMap<String, (String, String)>,
+    instructions: Vec<Instruction>,
+    nodes: HashMap<Element, (Element, Element)>,
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         let mut lines = input.lines().filter(|line| !line.is_empty());
-        let instructions = lines.next().unwrap().chars().collect();
 
-        let f = |s: &str| {
-            s.chars()
-                .filter(|c| c.is_alphanumeric())
-                .collect::<String>()
-        };
+        let instructions = lines
+            .next()
+            .ok_or(anyhow!("failed to parse instructions line"))?
+            .chars()
+            .map(Instruction::from)
+            .collect();
 
-        let nodes = lines.fold(HashMap::new(), |mut nodes, line| {
-            if let Some((key, values)) = line.split_once('=') {
-                if let Some((left, right)) = values.split_once(',') {
-                    nodes.insert(f(key), (f(left), f(right)));
-                }
-            }
-            nodes
-        });
+        let nodes = lines
+            .map(|line| {
+                let chars = line.chars().collect_vec();
+
+                (
+                    Element::from(&chars[0..3]),
+                    (Element::from(&chars[7..10]), Element::from(&chars[12..15])),
+                )
+            })
+            .collect();
 
         Ok(Self {
             instructions,
@@ -45,63 +102,56 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut location = String::from("AAA");
+        let mut location = &AAA;
 
-        Ok(self
-            .instructions
-            .iter()
-            .cycle()
-            .fold_while(0, |steps, &instruction| {
-                let paths = self.nodes.get(&location).unwrap();
-
+        for (i, instruction) in self.instructions.iter().cycle().enumerate() {
+            if let Some((left, right)) = self.nodes.get(location) {
                 location = match instruction {
-                    'L' => paths.0.clone(),
-                    'R' => paths.1.clone(),
-                    _ => panic!("invalid instruction: {instruction}"),
+                    Instruction::Left => left,
+                    Instruction::Right => right,
                 };
 
-                if location == "ZZZ" {
-                    Done(steps + 1)
-                } else {
-                    Continue(steps + 1)
+                if location == &ZZZ {
+                    return Ok(i + 1);
                 }
-            })
-            .into_inner())
+            } else {
+                return Err(anyhow!("failed to retrieve node"));
+            }
+        }
+
+        Err(anyhow!("failed to find path"))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let locations = self
+        Ok(self
             .nodes
             .keys()
-            .filter(|&node| node.ends_with('A'))
-            .cloned()
-            .collect_vec();
+            .par_bridge()
+            .filter_map(|node| {
+                if !node.ends_with('A') {
+                    return None;
+                }
 
-        let cycles = locations.iter().map(|start| {
-            let mut location = start.clone();
+                let mut location = node;
 
-            self.instructions
-                .iter()
-                .cycle()
-                .fold_while(0, |steps, &instruction| {
-                    let paths = self.nodes.get(&location).unwrap();
+                for (i, instruction) in self.instructions.iter().cycle().enumerate() {
+                    if let Some((left, right)) = self.nodes.get(location) {
+                        location = match instruction {
+                            Instruction::Left => left,
+                            Instruction::Right => right,
+                        };
 
-                    location = match instruction {
-                        'L' => paths.0.clone(),
-                        'R' => paths.1.clone(),
-                        _ => panic!("invalid instruction: {}", instruction),
-                    };
-
-                    if location.ends_with('Z') {
-                        Done(steps + 1)
+                        if location.ends_with('Z') {
+                            return Some(i + 1);
+                        }
                     } else {
-                        Continue(steps + 1)
+                        return None;
                     }
-                })
-                .into_inner()
-        });
+                }
 
-        Ok(cycles.reduce(lcm).unwrap())
+                None
+            })
+            .reduce(|| 1, lcm))
     }
 }
 
