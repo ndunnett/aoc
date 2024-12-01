@@ -2,6 +2,10 @@
 
 ## Solutions
 
+### 2024
+
+* [Day 1: Historian Hysteria](/rust/2024/src/bin/day01.rs)
+
 ### 2023
 
 * [Day 1: Trebuchet?!](/rust/2023/src/bin/day01.rs)
