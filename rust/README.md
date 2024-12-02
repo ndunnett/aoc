@@ -1,13 +1,15 @@
 # Advent of Code: Rust
 
-## Solutions
-
-### 2024
+<details open>
+<summary>2024 Solutions</summary>
 
 * [Day 1: Historian Hysteria](/rust/2024/src/bin/day01.rs)
 * [Day 2: Red-Nosed Reports](/rust/2024/src/bin/day02.rs)
 
-### 2023
+</details>
+
+<details>
+<summary>2023 Solutions</summary>
 
 * [Day 1: Trebuchet?!](/rust/2023/src/bin/day01.rs)
 * [Day 2: Cube Conundrum](/rust/2023/src/bin/day02.rs)
@@ -26,11 +28,20 @@
 * [Day 15: Lens Library](/rust/2023/src/bin/day15.rs)
 * [Day 16: The Floor Will Be Lava](/rust/2023/src/bin/day16.rs)
 
-Other solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
+</details>
+
+<details>
+<summary>2022 Solutions</summary>
+
+[/rust/2022/src/bin](/rust/2022/src/bin)
+
+These solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
+
+</details>
 
 ## Runner
 
-```
+```text
 Usage: aoc [OPTIONS] --year <YEAR> --day <DAY>
 
 Options:

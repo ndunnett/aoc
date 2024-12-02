@@ -1,8 +1,14 @@
 # Advent of Code: Python
 
-## Solutions
+<details open>
+<summary>2024 Solutions</summary>
 
-### 2023
+*Not yet started, I'm working on [Rust](/rust) first.*
+
+</details>
+
+<details>
+<summary>2023 Solutions</summary>
 
 * [Day 1: Trebuchet?!](/python/2023/day01.py)
 * [Day 2: Cube Conundrum](/python/2023/day02.py)
@@ -30,7 +36,10 @@
 * [Day 24: Never Tell Me The Odds](/python/2023/day24.py)
 * [Day 25: Snowverload](/python/2023/day25.py)
 
-### 2022
+</details>
+
+<details>
+<summary>2022 Solutions</summary>
 
 * [Day 1: Calorie Counting](/python/2022/day01.py)
 * [Day 2: Rock Paper Scissors](/python/2022/day02.py)
@@ -58,11 +67,13 @@
 * [Day 24: Blizzard Basin](/python/2022/day24.py)
 * [Day 25: Full of Hot Air](/python/2022/day25.py)
 
+</details>
+
 ## Runner
 
 I've written a basic runner ([run.py](/python/run.py)) which allows you to conveniently run puzzles from a CLI. If you are using my devcontainer, the runner can also be run using the `aoc` command rather than calling the Python script directly. See the help text below for usage:
 
-```
+```text
 usage: run.py -y YEAR -d DAY [-p PART] [-r | -t | -i | -o | -s] [-f] [-h]
 ```
 
@@ -85,7 +96,4 @@ usage: run.py -y YEAR -d DAY [-p PART] [-r | -t | -i | -o | -s] [-f] [-h]
 * `-f` / `--fast`: By default, when the solver is run it will repeatedly run for 1 second and print the median execution time. With the `-f` option, it will only run once.
 
 > [!NOTE]
-> The runner expects the environment variable `AOC_SESSION` to be set in order to download your input. See wimglenn/advent-of-code-wim#1 for more information. 
-
-### TODO:
-* New CLI function to submit answers
+> The runner expects the environment variable `AOC_SESSION` to be set in order to download your input. See wimglenn/advent-of-code-wim#1 for more information.

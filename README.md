@@ -1,5 +1,11 @@
-# Advent of Code
+<div align="center">
 
-* [Python](/python): completed 2022, 2023
-* [Rust](/rust): completed 2022 up to day 6, 2023 up to day 16
-* [Mojo](/mojo): barely started 2023
+<h1>Advent of Code</h1>
+
+<table><tr>
+<th><a href="/rust">Rust</a></th>
+<th><a href="/python">Python</a></th>
+<th><a href="/mojo">Mojo</a></th>
+</tr></table>
+
+</div>
