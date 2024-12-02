@@ -1,6 +1,4 @@
-use std::ops::Add;
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 enum Direction {
     N,
     S,
@@ -8,27 +6,46 @@ enum Direction {
     W,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 struct Point {
-    x: i32,
-    y: i32,
+    x: usize,
+    y: usize,
 }
 
 impl Point {
-    fn new(x: i32, y: i32) -> Point {
-        Point { x, y }
+    fn new(x: usize, y: usize) -> Self {
+        Self { x, y }
+    }
+
+    fn in_bounds<T>(&self, vec: &[Vec<T>]) -> bool {
+        self.y < vec.len() && self.x < vec[0].len()
+    }
+
+    fn move_towards(&mut self, direction: Direction) -> bool {
+        match direction {
+            Direction::N => {
+                if self.y == 0 {
+                    return false;
+                } else {
+                    self.y -= 1;
+                }
+            }
+            Direction::W => {
+                if self.x == 0 {
+                    return false;
+                } else {
+                    self.x -= 1;
+                }
+            }
+            Direction::S => self.y += 1,
+            Direction::E => self.x += 1,
+        }
+
+        true
     }
 }
 
-impl Add for Point {
-    type Output = Point;
-
-    fn add(self, other: Point) -> Point {
-        Point::new(self.x + other.x, self.y + other.y)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, PartialEq)]
 enum Tile {
     Empty,
     ForwardSlash,
@@ -37,89 +54,100 @@ enum Tile {
     Vertical,
 }
 
-impl Tile {
-    fn from_char(c: char) -> Tile {
+impl From<char> for Tile {
+    fn from(c: char) -> Self {
         match c {
-            '/' => Tile::ForwardSlash,
-            '\\' => Tile::BackSlash,
-            '-' => Tile::Horizontal,
-            '|' => Tile::Vertical,
-            _ => Tile::Empty,
+            '/' => Self::ForwardSlash,
+            '\\' => Self::BackSlash,
+            '-' => Self::Horizontal,
+            '|' => Self::Vertical,
+            _ => Self::Empty,
         }
     }
 }
 
+struct State {
+    energised: FxHashMap<Point, FxHashSet<Direction>>,
+}
+
+impl State {
+    fn new() -> Self {
+        Self {
+            energised: FxHashMap::default(),
+        }
+    }
+
+    fn energise(&mut self, position: Point, direction: Direction) -> bool {
+        if let Some(state) = self.energised.get_mut(&position) {
+            state.insert(direction)
+        } else {
+            self.energised
+                .insert(position, FxHashSet::from_iter([direction]))
+                .is_none()
+        }
+    }
+
+    fn finalise(self) -> Vec<Point> {
+        self.energised.into_keys().collect()
+    }
+}
+
 struct Solution {
-    contraption: HashMap<Point, Tile>,
+    contraption: Vec<Vec<Tile>>,
 }
 
 impl Solution {
+    fn get(&self, position: Point) -> Tile {
+        self.contraption[position.y][position.x]
+    }
+
     fn trace_beam(&self, position: Point, direction: Direction) -> Vec<Point> {
-        let mut beams = vec![(position, direction)];
-        let mut energised: HashMap<Point, HashSet<Direction>> = HashMap::new();
+        let mut queue = vec![(position, direction)];
+        let mut state = State::new();
 
-        let mut energise_tile = |p: Point, d: Direction| {
-            if self.contraption.contains_key(&p) {
-                if let Some(e) = energised.get_mut(&p) {
-                    e.insert(d)
-                } else {
-                    energised.insert(p, HashSet::from_iter([d])).is_none()
-                }
-            } else {
-                false
-            }
-        };
-
-        while let Some((mut p, mut d)) = beams.pop() {
-            while energise_tile(p, d) {
-                if let Some(tile) = self.contraption.get(&p) {
-                    match tile {
-                        Tile::Vertical => {
-                            if d == Direction::E || d == Direction::W {
-                                beams.push((p, Direction::N));
-                                beams.push((p, Direction::S));
-                                break;
-                            }
+        while let Some((mut pos, mut dir)) = queue.pop() {
+            while pos.in_bounds(&self.contraption) && state.energise(pos, dir) {
+                match self.get(pos) {
+                    Tile::Vertical => {
+                        if dir == Direction::E || dir == Direction::W {
+                            queue.push((pos, Direction::N));
+                            queue.push((pos, Direction::S));
+                            break;
                         }
-                        Tile::Horizontal => {
-                            if d == Direction::N || d == Direction::S {
-                                beams.push((p, Direction::E));
-                                beams.push((p, Direction::W));
-                                break;
-                            }
-                        }
-                        Tile::ForwardSlash => {
-                            d = match d {
-                                Direction::N => Direction::E,
-                                Direction::S => Direction::W,
-                                Direction::E => Direction::N,
-                                Direction::W => Direction::S,
-                            };
-                        }
-                        Tile::BackSlash => {
-                            d = match d {
-                                Direction::N => Direction::W,
-                                Direction::S => Direction::E,
-                                Direction::E => Direction::S,
-                                Direction::W => Direction::N,
-                            };
-                        }
-                        Tile::Empty => {}
                     }
+                    Tile::Horizontal => {
+                        if dir == Direction::N || dir == Direction::S {
+                            queue.push((pos, Direction::E));
+                            queue.push((pos, Direction::W));
+                            break;
+                        }
+                    }
+                    Tile::ForwardSlash => {
+                        dir = match dir {
+                            Direction::N => Direction::E,
+                            Direction::S => Direction::W,
+                            Direction::E => Direction::N,
+                            Direction::W => Direction::S,
+                        };
+                    }
+                    Tile::BackSlash => {
+                        dir = match dir {
+                            Direction::N => Direction::W,
+                            Direction::S => Direction::E,
+                            Direction::E => Direction::S,
+                            Direction::W => Direction::N,
+                        };
+                    }
+                    Tile::Empty => {}
+                }
 
-                    p = p + match d {
-                        Direction::N => Point::new(0, -1),
-                        Direction::S => Point::new(0, 1),
-                        Direction::E => Point::new(1, 0),
-                        Direction::W => Point::new(-1, 0),
-                    };
-                } else {
+                if !pos.move_towards(dir) {
                     break;
                 }
             }
         }
 
-        energised.into_keys().collect()
+        state.finalise()
     }
 }
 
@@ -128,13 +156,8 @@ impl Solver for Solution {
         Ok(Self {
             contraption: input
                 .lines()
-                .enumerate()
-                .flat_map(|(y, l)| {
-                    l.chars()
-                        .enumerate()
-                        .map(move |(x, c)| (Point::new(x as i32, y as i32), Tile::from_char(c)))
-                })
-                .collect(),
+                .map(|line| line.chars().map(Tile::from).collect::<Vec<_>>())
+                .collect::<Vec<_>>(),
         })
     }
 
@@ -143,21 +166,15 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let extent = self
-            .contraption
-            .keys()
-            .fold(Point { x: 0, y: 0 }, |acc, p| Point {
-                x: acc.x.max(p.x),
-                y: acc.y.max(p.y),
-            });
+        let extent = Point::new(self.contraption[0].len() - 1, self.contraption.len() - 1);
 
-        Ok((0..=extent.x)
+        Ok((0..extent.x)
             .map(|x| (Point::new(x, 0), Direction::S))
             .chain((0..=extent.x).map(|x| (Point::new(x, extent.y), Direction::N)))
             .chain((0..=extent.y).map(|y| (Point::new(0, y), Direction::E)))
             .chain((0..=extent.y).map(|y| (Point::new(extent.x, y), Direction::W)))
             .par_bridge()
-            .map(|(p, d)| self.trace_beam(p, d).len())
+            .map(|(pos, dir)| self.trace_beam(pos, dir).len())
             .max()
             .unwrap_or(0))
     }

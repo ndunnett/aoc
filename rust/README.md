@@ -24,6 +24,7 @@
 * [Day 13: Point of Incidence](/rust/2023/src/bin/day13.rs)
 * [Day 14: Parabolic Reflector Dish](/rust/2023/src/bin/day14.rs)
 * [Day 15: Lens Library](/rust/2023/src/bin/day15.rs)
+* [Day 16: The Floor Will Be Lava](/rust/2023/src/bin/day16.rs)
 
 Other solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
 
