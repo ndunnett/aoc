@@ -23,6 +23,7 @@
 * [Day 12: Hot Springs](/rust/2023/src/bin/day12.rs)
 * [Day 13: Point of Incidence](/rust/2023/src/bin/day13.rs)
 * [Day 14: Parabolic Reflector Dish](/rust/2023/src/bin/day14.rs)
+* [Day 15: Lens Library](/rust/2023/src/bin/day15.rs)
 
 Other solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
 

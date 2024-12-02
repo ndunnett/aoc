@@ -1,38 +1,31 @@
-use std::{
-    collections::hash_map::Entry,
-    hash::{DefaultHasher, Hasher},
-};
+use std::hash::{Hash, Hasher};
 
-fn hash<S: AsRef<str>>(s: S) -> usize {
+fn hash_algorithm<S: AsRef<str>>(s: S) -> u64 {
     s.as_ref()
         .chars()
         .filter(|&c| c != '\n')
-        .fold(0, |acc, c| (acc + c as usize) * 17 % 256)
+        .fold(0, |acc, c| (acc + c as u64) * 17 % 256)
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 struct Lens {
     id: u64,
-    hash: usize,
-    length: Option<usize>,
+    hash: u64,
+    length: Option<u64>,
 }
 
-impl Lens {
-    fn new<S: AsRef<str> + std::hash::Hash>(label: S, length: Option<usize>) -> Self {
-        let mut s = DefaultHasher::new();
+impl From<&String> for Lens {
+    fn from(value: &String) -> Self {
+        let (label, length) = value.split_once(['=', '-']).expect("failed to split lens");
+        let length = length.parse::<u64>().ok();
+        let mut s = FxHasher::default();
         label.hash(&mut s);
 
         Self {
             id: s.finish(),
-            hash: hash(label),
+            hash: hash_algorithm(label),
             length,
         }
-    }
-
-    fn parse<S: AsRef<str>>(chunk: S) -> Lens {
-        let (label, length) = chunk.as_ref().split_once(['=', '-']).unwrap();
-        let length = length.parse::<usize>().ok();
-        Self::new(label, length)
     }
 }
 
@@ -43,18 +36,18 @@ struct Solution {
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            elements: input.split(',').map(String::from).collect(),
+            elements: input.par_split(',').map(String::from).collect(),
         })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.elements.iter().map(hash).sum::<usize>())
+        Ok(self.elements.par_iter().map(hash_algorithm).sum::<u64>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut boxes: HashMap<usize, Vec<Lens>> = HashMap::new();
+        let mut boxes: FxHashMap<u64, Vec<Lens>> = FxHashMap::default();
 
-        for lens in self.elements.iter().map(Lens::parse) {
+        for lens in self.elements.iter().map(Lens::from) {
             if lens.length.is_some() {
                 let bucket = boxes.entry(lens.hash).or_default();
 
@@ -63,19 +56,17 @@ impl Solver for Solution {
                 } else {
                     bucket.push(lens);
                 }
-            } else if let Entry::Occupied(mut entry) = boxes.entry(lens.hash) {
-                entry.get_mut().retain(|l| l.id != lens.id);
+            } else if let Some(bucket) = boxes.get_mut(&lens.hash) {
+                bucket.retain(|l| l.id != lens.id);
             }
         }
 
-        Ok(boxes
-            .iter()
-            .flat_map(|(h, b)| {
-                b.iter()
-                    .enumerate()
-                    .map(move |(i, l)| (h + 1) * (i + 1) * l.length.unwrap())
-            })
-            .sum::<usize>())
+        Ok(boxes.par_iter().flat_map_iter(|(h, b)| {
+            b.iter()
+                .enumerate()
+                .map(move |(i, l)| (*h + 1) * (i as u64 + 1) * l.length.unwrap())
+        }))
+        .map(|test| test.sum::<u64>())
     }
 }
 

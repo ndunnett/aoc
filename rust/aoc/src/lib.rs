@@ -12,7 +12,7 @@ pub use colored::Colorize;
 pub use itertools::{self, Itertools};
 pub use rayon::prelude::*;
 pub use regex::{self, Regex};
-pub use rustc_hash::{FxHashMap, FxHashSet};
+pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 
 pub type Anyhow<T> = anyhow::Result<T>;
 
@@ -26,8 +26,8 @@ where
 }
 
 pub mod __runner {
+    pub use aoc_core::auto_input;
     pub use paste::paste;
-    pub use aoc_core::auto_input;    
 
     pub fn format_time(time: std::time::Duration) -> super::Anyhow<String> {
         let s = format!("{time:#?}");
@@ -65,7 +65,7 @@ pub mod __runner {
 /// pub use itertools::{self, Itertools};
 /// pub use rayon::prelude::*;
 /// pub use regex::{self, Regex};
-/// pub use rustc_hash::{FxHashMap, FxHashSet};
+/// pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 /// ```
 ///
 /// Type definitions:
