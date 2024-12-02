@@ -5,6 +5,7 @@
 ### 2024
 
 * [Day 1: Historian Hysteria](/rust/2024/src/bin/day01.rs)
+* [Day 2: Red-Nosed Reports](/rust/2024/src/bin/day02.rs)
 
 ### 2023
 
