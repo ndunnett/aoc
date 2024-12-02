@@ -3,30 +3,30 @@
 <details open>
 <summary>2024 Solutions</summary>
 
-* [Day 1: Historian Hysteria](/rust/2024/src/bin/day01.rs)
-* [Day 2: Red-Nosed Reports](/rust/2024/src/bin/day02.rs)
+* [Day 1: Historian Hysteria](./2024/src/bin/day01.rs)
+* [Day 2: Red-Nosed Reports](./2024/src/bin/day02.rs)
 
 </details>
 
 <details>
 <summary>2023 Solutions</summary>
 
-* [Day 1: Trebuchet?!](/rust/2023/src/bin/day01.rs)
-* [Day 2: Cube Conundrum](/rust/2023/src/bin/day02.rs)
-* [Day 3: Gear Ratios](/rust/2023/src/bin/day03.rs)
-* [Day 4: Scratchcards](/rust/2023/src/bin/day04.rs)
-* [Day 5: If You Give A Seed A Fertilizer](/rust/2023/src/bin/day05.rs)
-* [Day 6: Wait For It](/rust/2023/src/bin/day06.rs)
-* [Day 7: Camel Cards](/rust/2023/src/bin/day07.rs)
-* [Day 8: Haunted Wasteland](/rust/2023/src/bin/day08.rs)
-* [Day 9: Mirage Maintenance](/rust/2023/src/bin/day09.rs)
-* [Day 10: Pipe Maze](/rust/2023/src/bin/day10.rs)
-* [Day 11: Cosmic Expansion](/rust/2023/src/bin/day11.rs)
-* [Day 12: Hot Springs](/rust/2023/src/bin/day12.rs)
-* [Day 13: Point of Incidence](/rust/2023/src/bin/day13.rs)
-* [Day 14: Parabolic Reflector Dish](/rust/2023/src/bin/day14.rs)
-* [Day 15: Lens Library](/rust/2023/src/bin/day15.rs)
-* [Day 16: The Floor Will Be Lava](/rust/2023/src/bin/day16.rs)
+* [Day 1: Trebuchet?!](./2023/src/bin/day01.rs)
+* [Day 2: Cube Conundrum](./2023/src/bin/day02.rs)
+* [Day 3: Gear Ratios](./2023/src/bin/day03.rs)
+* [Day 4: Scratchcards](./2023/src/bin/day04.rs)
+* [Day 5: If You Give A Seed A Fertilizer](./2023/src/bin/day05.rs)
+* [Day 6: Wait For It](./2023/src/bin/day06.rs)
+* [Day 7: Camel Cards](./2023/src/bin/day07.rs)
+* [Day 8: Haunted Wasteland](./2023/src/bin/day08.rs)
+* [Day 9: Mirage Maintenance](./2023/src/bin/day09.rs)
+* [Day 10: Pipe Maze](./2023/src/bin/day10.rs)
+* [Day 11: Cosmic Expansion](./2023/src/bin/day11.rs)
+* [Day 12: Hot Springs](./2023/src/bin/day12.rs)
+* [Day 13: Point of Incidence](./2023/src/bin/day13.rs)
+* [Day 14: Parabolic Reflector Dish](./2023/src/bin/day14.rs)
+* [Day 15: Lens Library](./2023/src/bin/day15.rs)
+* [Day 16: The Floor Will Be Lava](./2023/src/bin/day16.rs)
 
 </details>
 
