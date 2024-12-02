@@ -16,6 +16,12 @@
 * [Day 6: Wait For It](/rust/2023/src/bin/day06.rs)
 * [Day 7: Camel Cards](/rust/2023/src/bin/day07.rs)
 * [Day 8: Haunted Wasteland](/rust/2023/src/bin/day08.rs)
+* [Day 9: Mirage Maintenance](/rust/2023/src/bin/day09.rs)
+* [Day 10: Pipe Maze](/rust/2023/src/bin/day10.rs)
+* [Day 11: Cosmic Expansion](/rust/2023/src/bin/day11.rs)
+* [Day 12: Hot Springs](/rust/2023/src/bin/day12.rs)
+* [Day 13: Point of Incidence](/rust/2023/src/bin/day13.rs)
+* [Day 14: Parabolic Reflector Dish](/rust/2023/src/bin/day14.rs)
 
 Other solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
 

@@ -1,48 +1,51 @@
-fn decompose(mut components: Vec<Vec<i32>>) -> Vec<Vec<i32>> {
-    let last = components.last().unwrap();
+fn extrapolate(history: Vec<i32>) -> i32 {
+    let mut components = vec![history];
 
-    if last.iter().all_equal() {
-        return components;
+    while let Some(last) = components.last() {
+        if last.iter().all_equal() {
+            break;
+        }
+
+        components.push(last.windows(2).map(|p| p[1] - p[0]).collect());
     }
 
-    components.push(last.windows(2).map(|p| p[1] - p[0]).collect_vec());
-    decompose(components)
-}
-
-fn predict(history: Vec<i32>) -> i32 {
-    decompose(vec![history])
+    components
         .iter()
-        .map(|c| c.last().unwrap())
+        .map(|c| c.last().expect("failed to extrapolate line"))
         .sum()
 }
 
 struct Solution {
-    grid: Vec<Vec<i32>>,
+    history: Vec<Vec<i32>>,
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let grid = input
-            .lines()
-            .map(|line| {
-                line.split_whitespace()
-                    .map(|s| s.parse().unwrap())
-                    .collect()
-            })
-            .collect();
-
-        Ok(Self { grid })
+        Ok(Self {
+            history: input
+                .lines()
+                .map(|line| {
+                    line.split(' ')
+                        .map(|s| s.parse())
+                        .collect::<ParseIntResult<Vec<_>>>()
+                })
+                .collect::<ParseIntResult<Vec<_>>>()?,
+        })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.grid.iter().map(|h| predict(h.to_vec())).sum::<i32>())
+        Ok(self
+            .history
+            .par_iter()
+            .map(|h| extrapolate(h.to_vec()))
+            .sum::<i32>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
-            .grid
-            .iter()
-            .map(|h| predict(h.iter().rev().cloned().collect()))
+            .history
+            .par_iter()
+            .map(|h| extrapolate(h.iter().rev().cloned().collect()))
             .sum::<i32>())
     }
 }

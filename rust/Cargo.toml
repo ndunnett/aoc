@@ -11,6 +11,7 @@ anyhow = "1.0.93"
 [profile.dev]
 lto = "off"
 opt-level = 0
+panic = "abort"
 
 [profile.dev.package."*"]
 codegen-units = 1
@@ -32,3 +33,4 @@ codegen-units = 1
 lto = "fat"
 opt-level = 3
 strip = true
+panic = "abort"

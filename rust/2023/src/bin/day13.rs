@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 enum Axis {
     V,
     H,
@@ -13,7 +13,7 @@ impl Axis {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 struct Point {
     x: usize,
     y: usize,
@@ -24,14 +24,14 @@ impl Point {
         Point { x, y }
     }
 
-    fn pivoted(&self, axis: Axis) -> Point {
+    fn pivoted(self, axis: Axis) -> Point {
         match axis {
-            Axis::V => *self,
+            Axis::V => self,
             Axis::H => Point::new(self.y, self.x),
         }
     }
 
-    fn view(&self, axis: Axis) -> usize {
+    fn view(self, axis: Axis) -> usize {
         match axis {
             Axis::V => self.x,
             Axis::H => self.y,
@@ -47,56 +47,58 @@ trait Reflection {
 
 impl Reflection for MirrorView {
     fn find_reflection(&self, smudges: u32) -> Option<usize> {
-        self.windows(2)
-            .enumerate()
-            .filter_map(|(i, w)| {
-                if (w[0] ^ w[1]).count_ones() <= smudges {
-                    Some(i + 1)
-                } else {
-                    None
-                }
-            })
-            .find(|&r| {
-                self[..r]
+        self.windows(2).enumerate().find_map(|(i, w)| {
+            if (w[0] ^ w[1]).count_ones() <= smudges
+                && self[..i + 1]
                     .iter()
                     .rev()
-                    .zip(self[r..].iter())
+                    .zip(self[i + 1..].iter())
                     .fold(0, |acc, (&a, &b)| acc + (a ^ b).count_ones())
                     == smudges
-            })
+            {
+                Some(i + 1)
+            } else {
+                None
+            }
+        })
     }
 }
 
-struct Mirror(Vec<Point>);
+struct Mirror {
+    points: Vec<Point>,
+    extent: Point,
+}
 
-impl Mirror {
-    fn parse(chunk: &str) -> Self {
-        Self(
-            chunk
-                .lines()
-                .enumerate()
-                .flat_map(|(y, line)| {
-                    line.chars().enumerate().filter_map(move |(x, c)| {
-                        if c == '#' {
-                            Some(Point::new(x, y))
-                        } else {
-                            None
-                        }
-                    })
+impl From<&str> for Mirror {
+    fn from(chunk: &str) -> Self {
+        let points = chunk
+            .lines()
+            .enumerate()
+            .flat_map(|(y, line)| {
+                line.chars().enumerate().filter_map(move |(x, c)| {
+                    if c == '#' {
+                        Some(Point::new(x, y))
+                    } else {
+                        None
+                    }
                 })
-                .collect(),
-        )
-    }
+            })
+            .collect::<Vec<_>>();
 
-    fn view(&self, axis: Axis) -> MirrorView {
-        let extent = self.0.iter().fold(Point::new(0, 0), |acc, r| {
+        let extent = points.iter().fold(Point::new(0, 0), |acc, r| {
             Point::new(acc.x.max(r.x), acc.y.max(r.y))
         });
 
-        (0..=extent.view(axis))
+        Self { points, extent }
+    }
+}
+
+impl Mirror {
+    fn view(&self, axis: Axis) -> MirrorView {
+        (0..=self.extent.view(axis))
             .map(|a| {
-                (0..=extent.view(axis.inverse())).fold(0, |acc, b| {
-                    acc | ((self.0.contains(&Point::new(a, b).pivoted(axis)) as usize) << b)
+                (0..=self.extent.view(axis.inverse())).fold(0, |acc, b| {
+                    acc | ((self.points.contains(&Point::new(a, b).pivoted(axis)) as usize) << b)
                 })
             })
             .collect()
@@ -109,23 +111,27 @@ struct Solution {
 
 impl Solution {
     fn solve(&self, smudges: u32) -> usize {
-        self.mirrors.iter().fold(0, |acc, mirror| {
-            acc + mirror
-                .view(Axis::V)
-                .find_reflection(smudges)
-                .or(mirror
-                    .view(Axis::H)
-                    .find_reflection(smudges)
-                    .map(|r| r * 100))
-                .unwrap_or(0)
-        })
+        self.mirrors
+            .par_iter()
+            .fold(
+                || 0,
+                |acc, mirror| {
+                    acc + mirror
+                        .view(Axis::H)
+                        .find_reflection(smudges)
+                        .map(|r| r * 100)
+                        .or_else(|| mirror.view(Axis::V).find_reflection(smudges))
+                        .unwrap_or(0)
+                },
+            )
+            .sum()
     }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            mirrors: input.split("\n\n").map(Mirror::parse).collect(),
+            mirrors: input.split("\n\n").map(Mirror::from).collect(),
         })
     }
 

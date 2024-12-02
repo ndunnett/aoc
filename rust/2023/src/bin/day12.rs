@@ -1,93 +1,119 @@
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
+type Cache = FxHashMap<Record, usize>;
+
+fn permutations(conditions: &[Condition], groups: &[u8], cache: &mut Cache) -> usize {
+    if conditions.is_empty() && groups.is_empty() {
+        return 1;
+    }
+
+    if let Some(&result) = cache.get(&Record::new(conditions, groups)) {
+        return result;
+    }
+
+    let mut perms = 0;
+
+    if let Some(&group) = groups.first() {
+        if conditions.len() >= group as usize {
+            let can_match_group = conditions[..group as usize]
+                .iter()
+                .all(|&c| c == Condition::Damaged || c == Condition::Unknown);
+
+            match (can_match_group, conditions.get(group as usize)) {
+                (true, Some(&Condition::Unknown)) => {
+                    perms += permutations(
+                        &[&[Condition::Operational], &conditions[group as usize + 1..]].concat(),
+                        &groups[1..],
+                        cache,
+                    );
+                }
+                (true, Some(&Condition::Operational) | None) => {
+                    perms += permutations(&conditions[group as usize..], &groups[1..], cache);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if !conditions.is_empty() && conditions.first() != Some(&Condition::Damaged) {
+        perms += permutations(&conditions[1..], groups, cache);
+    }
+
+    cache.insert(Record::new(conditions, groups), perms);
+    perms
+}
+
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 enum Condition {
     Operational,
     Damaged,
     Unknown,
 }
 
-impl Condition {
-    fn from_char(c: char) -> Option<Condition> {
+impl TryFrom<char> for Condition {
+    type Error = Error;
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
-            '.' => Some(Condition::Operational),
-            '#' => Some(Condition::Damaged),
-            '?' => Some(Condition::Unknown),
-            _ => None,
+            '.' => Ok(Condition::Operational),
+            '#' => Ok(Condition::Damaged),
+            '?' => Ok(Condition::Unknown),
+            _ => Err(anyhow!("failed to parse char: '{c}'")),
         }
     }
 }
 
-type Cache = HashMap<Record, usize>;
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Eq, PartialEq)]
 struct Record {
     conditions: Vec<Condition>,
-    groups: Vec<usize>,
+    groups: Vec<u8>,
+}
+
+impl TryFrom<&str> for Record {
+    type Error = Error;
+
+    fn try_from(line: &str) -> Result<Self, Self::Error> {
+        let (conditions, groups) = line
+            .split_once(' ')
+            .ok_or(anyhow!("failed to split line"))?;
+
+        let conditions = conditions
+            .chars()
+            .filter_map(|c| Condition::try_from(c).ok())
+            .collect();
+
+        let groups = groups
+            .split(',')
+            .map(|n| n.parse())
+            .collect::<ParseIntResult<_>>()?;
+
+        Ok(Self { conditions, groups })
+    }
+}
+
+impl std::hash::Hash for Record {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.conditions.hash(state);
+        self.groups.hash(state);
+    }
 }
 
 impl Record {
-    fn new(conditions: &[Condition], groups: &[usize]) -> Record {
-        Record {
+    fn new(conditions: &[Condition], groups: &[u8]) -> Self {
+        Self {
             conditions: conditions.to_vec(),
             groups: groups.to_vec(),
         }
     }
 
-    fn parse(line: &str) -> Record {
-        let split = line.split_once(' ').unwrap();
-        Record {
-            conditions: split.0.chars().filter_map(Condition::from_char).collect(),
-            groups: split.1.split(',').map(|n| n.parse().unwrap()).collect(),
-        }
-    }
-
-    fn solve_part(conditions: &[Condition], groups: &[usize], cache: &mut Cache) -> usize {
-        if conditions.is_empty() && groups.is_empty() {
-            return 1;
-        }
-
-        if let Some(&result) = cache.get(&Record::new(conditions, groups)) {
-            return result;
-        }
-
-        let mut permutations = 0;
-
-        if let Some(&group) = groups.first() {
-            if conditions.len() >= group
-                && conditions[..group]
-                    .iter()
-                    .all(|c| matches!(c, Condition::Damaged | Condition::Unknown))
-                && *conditions.get(group).unwrap_or(&Condition::Unknown) != Condition::Damaged
-            {
-                if conditions.get(group) == Some(&Condition::Unknown) {
-                    permutations += Record::solve_part(
-                        &[&[Condition::Operational], &conditions[group + 1..]].concat(),
-                        &groups[1..],
-                        cache,
-                    );
-                } else {
-                    permutations += Record::solve_part(&conditions[group..], &groups[1..], cache);
-                }
-            }
-        }
-
-        if conditions.first().is_some_and(|&c| c != Condition::Damaged) {
-            permutations += Record::solve_part(&conditions[1..], groups, cache);
-        }
-
-        cache.insert(Record::new(conditions, groups), permutations);
-        permutations
-    }
-
     fn solve(&self) -> usize {
-        Record::solve_part(&self.conditions, &self.groups, &mut Cache::new())
+        permutations(&self.conditions, &self.groups, &mut Cache::default())
     }
 
-    fn unfolded(&self, folds: usize) -> Record {
+    fn unfolded(&self, folds: usize) -> Self {
         let conditions = &[&self.conditions[..], &[Condition::Unknown]]
             .concat()
             .repeat(folds);
 
-        Record::new(
+        Self::new(
             &conditions[..conditions.len() - 1],
             &self.groups.repeat(folds),
         )
@@ -101,18 +127,21 @@ struct Solution {
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            records: input.lines().map(Record::parse).collect(),
+            records: input
+                .par_lines()
+                .map(Record::try_from)
+                .collect::<Anyhow<Vec<_>>>()?,
         })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.records.iter().map(Record::solve).sum::<usize>())
+        Ok(self.records.par_iter().map(Record::solve).sum::<usize>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
             .records
-            .iter()
+            .par_iter()
             .map(|r| r.unfolded(5).solve())
             .sum::<usize>())
     }

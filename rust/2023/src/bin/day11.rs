@@ -1,57 +1,94 @@
+#[derive(Clone, Copy, PartialEq)]
 struct Point {
-    x: usize,
-    y: usize,
+    pub x: usize,
+    pub y: usize,
+}
+
+impl From<(usize, usize)> for Point {
+    fn from(tuple: (usize, usize)) -> Self {
+        Self {
+            x: tuple.0,
+            y: tuple.1,
+        }
+    }
+}
+
+impl Point {
+    fn new(x: usize, y: usize) -> Self {
+        Self { x, y }
+    }
 }
 
 struct Solution {
-    uni: Vec<Point>,
+    universe: Vec<Point>,
 }
 
 impl Solution {
     fn expanded(&self, age: usize) -> Self {
-        let extent = self.uni.iter().fold(Point { x: 0, y: 0 }, |acc, g| Point {
-            x: acc.x.max(g.x),
-            y: acc.y.max(g.y),
-        });
+        let rate = age.saturating_sub(1);
 
-        let cols = (0..=extent.x).filter(|x| self.uni.iter().all(|g| g.x != *x));
-        let rows = (0..=extent.y).filter(|y| self.uni.iter().all(|g| g.y != *y));
-
-        let uni = self
-            .uni
+        let x_extent = self
+            .universe
             .iter()
-            .map(|g| Point {
-                x: g.x + age.saturating_sub(1) * cols.clone().filter(|x| x < &g.x).count(),
-                y: g.y + age.saturating_sub(1) * rows.clone().filter(|y| y < &g.y).count(),
-            })
-            .collect_vec();
+            .fold(0, |acc, galaxy| acc.max(galaxy.x));
 
-        Self { uni }
+        let y_extent = self.universe[self.universe.len() - 1].y;
+
+        let empty_cols = (0..=x_extent)
+            .into_par_iter()
+            .filter(|x| self.universe.iter().all(|g| g.x != *x))
+            .collect::<Vec<_>>();
+
+        let empty_rows = (0..=y_extent)
+            .into_par_iter()
+            .filter(|y| self.universe.iter().all(|g| g.y != *y))
+            .collect::<Vec<_>>();
+
+        let universe = self
+            .universe
+            .par_iter()
+            .map(|galaxy| {
+                Point::new(
+                    galaxy.x + rate * empty_cols.iter().filter(|&&x| x < galaxy.x).count(),
+                    galaxy.y + rate * empty_rows.iter().filter(|&&y| y < galaxy.y).count(),
+                )
+            })
+            .collect();
+
+        Self { universe }
     }
 
     fn solve(&self) -> usize {
-        self.uni
-            .iter()
-            .combinations(2)
-            .map(|v| v[0].x.abs_diff(v[1].x) + v[0].y.abs_diff(v[1].y))
+        (0..self.universe.len() - 1)
+            .into_par_iter()
+            .flat_map_iter(|a| {
+                (a + 1..self.universe.len()).map(move |b| (self.universe[a], self.universe[b]))
+            })
+            .map(|(a, b)| a.x.abs_diff(b.x) + a.y.abs_diff(b.y))
             .sum()
     }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let uni = input
+        let universe = input
             .lines()
             .enumerate()
             .flat_map(|(y, line)| {
                 line.chars()
                     .enumerate()
-                    .filter_map(|(x, c)| if c == '#' { Some(Point { x, y }) } else { None })
-                    .collect_vec()
+                    .filter_map(|(x, c)| {
+                        if c == '#' {
+                            Some(Point::new(x, y))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
             })
-            .collect_vec();
+            .collect::<Vec<_>>();
 
-        Ok(Self { uni })
+        Ok(Self { universe })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {

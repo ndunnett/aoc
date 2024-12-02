@@ -1,26 +1,38 @@
-use std::ops::Add;
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 struct Point {
     x: i32,
     y: i32,
 }
 
+impl From<(usize, usize)> for Point {
+    fn from(tuple: (usize, usize)) -> Self {
+        Self {
+            x: tuple.0 as i32,
+            y: tuple.1 as i32,
+        }
+    }
+}
+
+impl std::ops::Add for Point {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self::new(self.x + other.x, self.y + other.y)
+    }
+}
+
 impl Point {
-    fn new(x: i32, y: i32) -> Point {
-        Point { x, y }
+    fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
     }
+
+    const N: Self = Self { x: 0, y: -1 };
+    const S: Self = Self { x: 0, y: 1 };
+    const E: Self = Self { x: 1, y: 0 };
+    const W: Self = Self { x: -1, y: 0 };
 }
 
-impl Add for Point {
-    type Output = Point;
-
-    fn add(self, other: Point) -> Point {
-        Point::new(self.x + other.x, self.y + other.y)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 enum Pipe {
     Cross,
     Vertical,
@@ -31,163 +43,157 @@ enum Pipe {
     BendSE,
 }
 
-impl Pipe {
-    fn from_char(c: char) -> Option<Pipe> {
+impl TryFrom<char> for Pipe {
+    type Error = Error;
+
+    fn try_from(c: char) -> Result<Self, Self::Error> {
         match c {
-            'S' => Some(Pipe::Cross),
-            '|' => Some(Pipe::Vertical),
-            '-' => Some(Pipe::Horizontal),
-            'L' => Some(Pipe::BendNE),
-            'J' => Some(Pipe::BendNW),
-            '7' => Some(Pipe::BendSW),
-            'F' => Some(Pipe::BendSE),
-            _ => None,
+            'S' => Ok(Self::Cross),
+            '|' => Ok(Self::Vertical),
+            '-' => Ok(Self::Horizontal),
+            'L' => Ok(Self::BendNE),
+            'J' => Ok(Self::BendNW),
+            '7' => Ok(Self::BendSW),
+            'F' => Ok(Self::BendSE),
+            _ => Err(anyhow!("failed to parse as pipe: '{c}'")),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
-struct Tile {
-    point: Point,
-    pipe: Pipe,
-}
-
-impl Tile {
-    fn new(point: Point, pipe: Pipe) -> Tile {
-        Tile { point, pipe }
+impl Pipe {
+    fn offsets(&self) -> Vec<Point> {
+        match self {
+            Pipe::Vertical => vec![Point::N, Point::S],
+            Pipe::BendNE => vec![Point::N, Point::E],
+            Pipe::BendNW => vec![Point::N, Point::W],
+            Pipe::BendSE => vec![Point::S, Point::E],
+            Pipe::BendSW => vec![Point::S, Point::W],
+            Pipe::Horizontal => vec![Point::E, Point::W],
+            Pipe::Cross => vec![Point::W, Point::E, Point::S, Point::N],
+        }
     }
 }
 
 struct Solution {
-    maze: HashMap<Point, Pipe>,
+    maze: Vec<Vec<Option<Pipe>>>,
 }
 
 impl Solution {
-    fn neighbours(&self, tile: &Tile) -> Vec<Tile> {
-        match tile.pipe {
-            Pipe::Vertical => vec![Point::new(0, -1), Point::new(0, 1)],
-            Pipe::BendNE => vec![Point::new(0, -1), Point::new(1, 0)],
-            Pipe::BendNW => vec![Point::new(0, -1), Point::new(-1, 0)],
-            Pipe::BendSE => vec![Point::new(0, 1), Point::new(1, 0)],
-            Pipe::BendSW => vec![Point::new(0, 1), Point::new(-1, 0)],
-            Pipe::Horizontal => vec![Point::new(1, 0), Point::new(-1, 0)],
-            Pipe::Cross => vec![
-                Point::new(-1, 0),
-                Point::new(1, 0),
-                Point::new(0, 1),
-                Point::new(0, -1),
-            ],
+    fn get(&self, point: &Point) -> Option<&Pipe> {
+        if 0 <= point.y
+            && point.y < self.maze.len() as i32
+            && 0 <= point.x
+            && point.x < self.maze[0].len() as i32
+        {
+            self.maze[point.y as usize][point.x as usize].as_ref()
+        } else {
+            None
         }
-        .iter()
-        .filter_map(|&offset| {
-            let p = tile.point + offset;
-
-            if let Some(&t) = self.maze.get(&p) {
-                Some(Tile::new(p, t))
-            } else {
-                None
-            }
-        })
-        .collect()
     }
 
-    fn connections(&self, tile: &Tile) -> Vec<Tile> {
-        self.neighbours(tile)
-            .into_iter()
-            .filter(|n| self.neighbours(n).contains(tile))
-            .collect_vec()
-    }
-
-    fn find_circuit(&self, from: &Tile, seen: &[Tile]) -> Option<Vec<Tile>> {
-        for c in self.connections(from) {
-            if c.pipe == Pipe::Cross {
-                return Some(seen.to_vec());
-            } else if !seen.contains(&c) {
-                return self.find_circuit(&c, &[seen, &[c]].concat());
-            }
-        }
-
-        None
-    }
-
-    fn find_start(&self) -> Tile {
+    fn find_start(&self) -> Anyhow<Point> {
         self.maze
             .iter()
-            .find_map(|(&point, &pipe)| {
-                if pipe == Pipe::Cross {
-                    Some(Tile::new(point, pipe))
-                } else {
-                    None
-                }
+            .enumerate()
+            .filter_map(|(y, row)| {
+                row.iter()
+                    .position(|&pipe| pipe == Some(Pipe::Cross))
+                    .map(|x| Point::from((x, y)))
             })
-            .unwrap()
+            .next()
+            .ok_or(anyhow!("failed to find starting tile"))
     }
 
-    fn extent(&self) -> (Point, Point) {
-        let (min_x, max_x, min_y, max_y) =
-            self.maze
-                .iter()
-                .fold((0, 0, 0, 0), |(min_x, max_x, min_y, max_y), (point, _)| {
-                    (
-                        min_x.min(point.x),
-                        max_x.max(point.x),
-                        min_y.min(point.y),
-                        max_y.max(point.y),
-                    )
-                });
+    fn find_path(&self) -> Anyhow<HashSet<Point>> {
+        let start = self.find_start()?;
+        let mut seen = HashSet::from_iter([start]);
+        let mut queue = vec![start];
 
-        (Point::new(min_x, min_y), Point::new(max_x, max_y))
+        while let Some(point) = queue.pop() {
+            let pipe = if let Some(pipe) = self.get(&point) {
+                pipe
+            } else {
+                continue;
+            };
+
+            for offset in &pipe.offsets() {
+                let edge_point = point + *offset;
+
+                if let Some(edge_pipe) = self.get(&edge_point) {
+                    let is_connected = edge_pipe
+                        .offsets()
+                        .into_iter()
+                        .any(|offset| edge_point + offset == point);
+
+                    if is_connected {
+                        if *edge_pipe == Pipe::Cross {
+                            return Ok(seen);
+                        } else if !seen.contains(&edge_point) {
+                            seen.insert(edge_point);
+                            queue.insert(0, edge_point);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(anyhow!("failed to find path in maze"))
+    }
+
+    fn reduced(self) -> Anyhow<Self> {
+        let mut maze = vec![vec![None; self.maze[0].len()]; self.maze.len()];
+
+        for point in &self.find_path()? {
+            maze[point.y as usize][point.x as usize] = self.get(point).cloned();
+        }
+
+        Ok(Self { maze })
     }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         let maze = input
-            .lines()
-            .enumerate()
-            .flat_map(|(y, line)| {
+            .par_lines()
+            .map(|line| {
                 line.chars()
-                    .enumerate()
-                    .filter_map(|(x, c)| {
-                        Pipe::from_char(c).map(|j| Tile::new(Point::new(x as i32, y as i32), j))
-                    })
-                    .collect_vec()
+                    .map(|c| Pipe::try_from(c).ok())
+                    .collect::<Vec<_>>()
             })
-            .map(|p| (p.point, p.pipe))
-            .collect();
+            .collect::<Vec<_>>();
 
-        let mut sol = Self { maze };
-        let start = sol.find_start();
-
-        if let Some(circuit) = sol.find_circuit(&start, &[start]) {
-            sol.maze = circuit.iter().map(|p| (p.point, p.pipe)).collect();
-        }
-
-        Ok(sol)
+        Self { maze }.reduced()
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.maze.len() / 2)
+        Ok(self
+            .maze
+            .par_iter()
+            .map(|row| row.iter().filter(|point| point.is_some()).count())
+            .sum::<usize>()
+            / 2)
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let (min, max) = self.extent();
+        let extent = Point::from((self.maze[0].len(), self.maze.len()));
 
-        Ok((min.y..=max.y)
+        Ok((0..=extent.y)
+            .par_bridge()
             .map(|y| {
-                (min.x..=max.x)
-                    .fold((0, false), |(acc, in_loop), x| {
-                        match (in_loop, self.maze.get(&Point::new(x, y))) {
+                (0..=extent.x)
+                    .fold((0, false), |(enclosed, in_loop), x| {
+                        match (in_loop, self.get(&Point::new(x, y))) {
                             (_, Some(Pipe::Vertical | Pipe::BendNW | Pipe::BendNE)) => {
-                                (acc, !in_loop)
+                                (enclosed, !in_loop)
                             }
-                            (true, None) => (acc + 1, in_loop),
-                            _ => (acc, in_loop),
+                            (true, None) => (enclosed + 1, in_loop),
+                            _ => (enclosed, in_loop),
                         }
                     })
                     .0
             })
-            .sum::<i32>())
+            .sum::<u32>())
     }
 }
 
