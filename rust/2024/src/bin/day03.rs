@@ -3,7 +3,6 @@ type Expr = (u32, u32);
 struct Parser<'a> {
     chars: std::iter::Peekable<std::str::Chars<'a>>,
     dont: bool,
-    finish: bool,
 }
 
 impl<'a> Parser<'a> {
@@ -11,9 +10,12 @@ impl<'a> Parser<'a> {
         Self {
             chars: input.chars().peekable(),
             dont: false,
-            finish: false,
         }
     }
+
+    const PATTERN_DONT: [char; 6] = ['o', 'n', '\'', 't', '(', ')'];
+    const PATTERN_DO: [char; 3] = ['o', '(', ')'];
+    const PATTERN_MUL: [char; 2] = ['u', 'l'];
 
     fn match_pattern(&mut self, pattern: &[char]) -> bool {
         if self.chars.clone().zip(pattern).all(|(a, &b)| a == b) {
@@ -31,7 +33,7 @@ impl<'a> Parser<'a> {
         let mut do_exprs = Vec::new();
         let mut dont_exprs = Vec::new();
 
-        while !self.finish {
+        while self.chars.peek().is_some() {
             if let Some(expr) = self.expr() {
                 if self.dont {
                     dont_exprs.push(expr);
@@ -45,21 +47,17 @@ impl<'a> Parser<'a> {
     }
 
     fn expr(&mut self) -> Option<Expr> {
-        match self.chars.next() {
-            Some('d') => self.do_(),
-            Some('m') => self.mul(),
-            None => {
-                self.finish = true;
-                None
-            }
+        match self.chars.next()? {
+            'd' => self.do_(),
+            'm' => self.mul(),
             _ => None,
         }
     }
 
     fn do_(&mut self) -> Option<Expr> {
-        if self.match_pattern(&['o', 'n', '\'', 't', '(', ')']) {
+        if self.match_pattern(&Self::PATTERN_DONT) {
             self.dont = true;
-        } else if self.match_pattern(&['o', '(', ')']) {
+        } else if self.match_pattern(&Self::PATTERN_DO) {
             self.dont = false;
         }
 
@@ -67,7 +65,7 @@ impl<'a> Parser<'a> {
     }
 
     fn mul(&mut self) -> Option<Expr> {
-        if self.match_pattern(&['u', 'l']) {
+        if self.match_pattern(&Self::PATTERN_MUL) {
             self.chars.next_if_eq(&'(')?;
             let a = self.number()?;
             self.chars.next_if_eq(&',')?;
