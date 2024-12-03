@@ -5,6 +5,7 @@
 
 * [Day 1: Historian Hysteria](./2024/src/bin/day01.rs)
 * [Day 2: Red-Nosed Reports](./2024/src/bin/day02.rs)
+* [Day 3: Mull It Over](./2024/src/bin/day03.rs)
 
 </details>
 
@@ -33,7 +34,7 @@
 <details>
 <summary>2022 Solutions</summary>
 
-[/rust/2022/src/bin](/rust/2022/src/bin)
+[/rust/2022/src/bin](./2022/src/bin)
 
 These solutions are merged in from old repos when I was learning Rust, view at your own caution. I plan on rewriting them all.
 
@@ -64,7 +65,7 @@ Options:
 
 ### Automation Compliance
 
-All automated functionality impacting the Advent of Code servers follows the [automation guidelines](https://www.reddit.com/r/adventofcode/wiki/faqs/automation), see [`lib.rs`](/rust/aoc_core/src/lib.rs) for implementation.
+All automated functionality impacting the Advent of Code servers follows the [automation guidelines](https://www.reddit.com/r/adventofcode/wiki/faqs/automation), see [`lib.rs`](./aoc_core/src/lib.rs) in `aoc_core` for implementation details.
 
 * Input files are cached to a local directory and ignored by source control
 * The request user agent is set to `github.com/ndunnett/aoc/rust`
