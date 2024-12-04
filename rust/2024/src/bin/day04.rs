@@ -49,6 +49,14 @@ impl Grid {
         }
     }
 
+    fn cross_iter(&self) -> GridIterator<'_> {
+        GridIterator {
+            grid: self,
+            index: self.cross_index(),
+            method: GridIterationMethod::Cross,
+        }
+    }
+
     fn horizontal_index(&self) -> Index<'_> {
         Box::new((0..self.size - 3).flat_map(move |x| {
             (0..self.size).map(move |y| {
@@ -133,14 +141,6 @@ struct GridIterator<'a> {
     method: GridIterationMethod,
 }
 
-impl GridIterator<'_> {
-    fn cross(mut self) -> Self {
-        self.method = GridIterationMethod::Cross;
-        self.index = self.grid.cross_index();
-        self
-    }
-}
-
 impl Iterator for GridIterator<'_> {
     type Item = (Letter, Letter, Letter, Letter);
 
@@ -210,8 +210,7 @@ impl Solver for Solution {
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
             .grid
-            .iter()
-            .cross()
+            .cross_iter()
             .filter(|tup| {
                 matches!(
                     tup,
