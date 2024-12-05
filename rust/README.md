@@ -7,6 +7,7 @@
 * [Day 2: Red-Nosed Reports](./2024/src/bin/day02.rs)
 * [Day 3: Mull It Over](./2024/src/bin/day03.rs)
 * [Day 4: Ceres Search](./2024/src/bin/day04.rs)
+* [Day 5: Print Queue](./2024/src/bin/day05.rs)
 
 </details>
 
