@@ -9,6 +9,7 @@
 * [Day 4: Ceres Search](./2024/src/bin/day04.rs)
 * [Day 5: Print Queue](./2024/src/bin/day05.rs)
 * [Day 6: Guard Gallivant](./2024/src/bin/day06.rs)
+* [Day 7: Bridge Repair](./2024/src/bin/day07.rs)
 
 </details>
 
