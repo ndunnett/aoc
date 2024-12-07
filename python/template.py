@@ -22,7 +22,7 @@ from time import time
 
 
 class State:
-    def __init__(self, input: str):
+    def __init__(self, input: str) -> None:
         lines = input.splitlines()
         pass
 
