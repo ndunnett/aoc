@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import chain
 from typing import TYPE_CHECKING, Callable, Protocol, Self, TypeVar
 
 if TYPE_CHECKING:
@@ -15,7 +16,6 @@ class SupportsMaths(Protocol[T_contra, T_co]):
     def __add__(self, x: T_contra, /) -> T_co: ...
     def __sub__(self, x: T_contra, /) -> T_co: ...
     def __mul__(self, x: T_contra, /) -> T_co: ...
-    def __div__(self, x: T_contra, /) -> T_co: ...
 
 
 class SupportsRichComparison(Protocol[T]):
@@ -55,6 +55,59 @@ def is_floatable(s: str) -> bool:
         return True
     except Exception as _:
         return False
+
+
+class Peekable[T]:
+    def __init__(self, iterable: Iterable[T]) -> None:
+        self.it = iter(iterable)
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> T:
+        return next(self.it)
+
+    def __peek__(self) -> T | None:
+        it = self.it
+        try:
+            peek = next(self.it)
+            self.it = chain((peek,), it)
+            return peek
+        except StopIteration:
+            return None
+
+
+def peekable(iterable: Iterable[T]) -> Peekable[T]:
+    return Peekable(iterable)
+
+
+def peek(peekable: Peekable[T]) -> T | None:
+    return peekable.__peek__()
+
+
+class ChunkedBy[T, U]:
+    def __init__(self, predicate: Callable[[T], U], iterable: Iterable[T]) -> None:
+        self.it = peekable(iter(iterable))
+        self.predicate = predicate
+
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> tuple[U, list[T]]:
+        chunk = [next(self.it)]
+        cat = self.predicate(chunk[0])
+
+        while peeked := peek(self.it):
+            if self.predicate(peeked) == cat:
+                chunk.append(next(self.it))
+            else:
+                break
+
+        return (cat, chunk)
+
+
+def chunk_by[T, U](predicate: Callable[[T], U], iterable: Iterable[T]) -> ChunkedBy[T, U]:
+    return ChunkedBy(predicate, iterable)
 
 
 class Point(tuple[N, ...]):

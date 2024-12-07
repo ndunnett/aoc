@@ -1,24 +1,28 @@
 from __future__ import annotations
-from lib import Point, is_intable, is_floatable, get_limits, filter_map
-from functools import cache, reduce
-from itertools import chain, pairwise, batched, combinations, permutations, product, cycle
-from heapq import heapify, heappop, heappush
-from enum import Enum, auto
-from copy import deepcopy
-from collections import defaultdict
-from dataclasses import dataclass
+
+import math
+import operator
+import re
 from ast import literal_eval
-from typing import Any, Callable, Generator
-from random import random
-from statistics import median, mean
+from collections import defaultdict
+from copy import deepcopy
+from dataclasses import dataclass
+from enum import Enum, auto
+from functools import cache, reduce
+from heapq import heapify, heappop, heappush
+from itertools import batched, chain, combinations, cycle, pairwise, permutations, product
 from multiprocessing import Pool
 from os import cpu_count
-import z3
-import math
-import re
-import operator
 from pprint import pprint
+from random import random
+from statistics import mean, median
 from time import time
+from typing import Any, Callable, Generator
+
+import numpy as np
+import z3
+
+from lib import Point, filter_map, get_limits, is_floatable, is_intable
 
 
 class State:

@@ -3,7 +3,13 @@
 <details open>
 <summary>2024 Solutions</summary>
 
-*Not yet started, I'm working on [Rust](/rust) first.*
+* [Day 1: Historian Hysteria](/python/2024/day01.py)
+* [Day 2: Red-Nosed Reports](/python/2024/day02.py)
+* [Day 3: Mull It Over](/python/2024/day03.py)
+* [Day 4: Ceres Search](/python/2024/day04.py)
+* [Day 5: Print Queue](/python/2024/day05.py)
+* [Day 6: Guard Gallivant](/python/2024/day06.py)
+* [Day 7: Bridge Repair](/python/2024/day07.py)
 
 </details>
 
