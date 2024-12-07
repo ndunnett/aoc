@@ -1,12 +1,15 @@
 {
   "dockerComposeFile": "./docker-compose.yml",
   "service": "aoc_python",
-  "workspaceFolder": "/home/dev/repo/python",
+  "workspaceFolder": "/ws/python",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
-        "ms-python.autopep8"
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml",
+        "fill-labs.dependi",
+        "davidanson.vscode-markdownlint"
       ]
     }
   }
