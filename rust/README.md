@@ -12,6 +12,7 @@
 * [Day 7: Bridge Repair](./2024/src/bin/day07.rs)
 * [Day 8: Resonant Collinearity](./2024/src/bin/day08.rs)
 * [Day 9: Disk Fragmenter](./2024/src/bin/day09.rs)
+* [Day 10: Hoof It](./2024/src/bin/day10.rs)
 
 </details>
 
