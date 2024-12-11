@@ -13,6 +13,7 @@
 * [Day 8: Resonant Collinearity](./2024/src/bin/day08.rs)
 * [Day 9: Disk Fragmenter](./2024/src/bin/day09.rs)
 * [Day 10: Hoof It](./2024/src/bin/day10.rs)
+* [Day 11: Plutonian Pebbles](./2024/src/bin/day11.rs)
 
 </details>
 
