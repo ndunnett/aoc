@@ -17,6 +17,7 @@
 * [Day 12: Garden Groups](./2024/src/bin/day12.rs)
 * [Day 13: Claw Contraption](./2024/src/bin/day13.rs)
 * [Day 14: Restroom Redoubt](./2024/src/bin/day14.rs)
+* [Day 15: Warehouse Woes](./2024/src/bin/day15.rs)
 
 </details>
 
