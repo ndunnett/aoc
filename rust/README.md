@@ -15,6 +15,7 @@
 * [Day 10: Hoof It](./2024/src/bin/day10.rs)
 * [Day 11: Plutonian Pebbles](./2024/src/bin/day11.rs)
 * [Day 12: Garden Groups](./2024/src/bin/day12.rs)
+* [Day 13: Claw Contraption](./2024/src/bin/day13.rs)
 
 </details>
 
