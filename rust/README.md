@@ -18,6 +18,7 @@
 * [Day 13: Claw Contraption](./2024/src/bin/day13.rs)
 * [Day 14: Restroom Redoubt](./2024/src/bin/day14.rs)
 * [Day 15: Warehouse Woes](./2024/src/bin/day15.rs)
+* [Day 16: Reindeer Maze](./2024/src/bin/day16.rs)
 
 </details>
 
