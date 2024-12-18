@@ -20,6 +20,7 @@
 * [Day 15: Warehouse Woes](./2024/src/bin/day15.rs)
 * [Day 16: Reindeer Maze](./2024/src/bin/day16.rs)
 * [Day 17: Chronospatial Computer](./2024/src/bin/day17.rs)
+* [Day 18: RAM Run](./2024/src/bin/day18.rs)
 
 </details>
 
