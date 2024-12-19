@@ -21,6 +21,7 @@
 * [Day 16: Reindeer Maze](./2024/src/bin/day16.rs)
 * [Day 17: Chronospatial Computer](./2024/src/bin/day17.rs)
 * [Day 18: RAM Run](./2024/src/bin/day18.rs)
+* [Day 19: Linen Layout](./2024/src/bin/day19.rs)
 
 </details>
 
