@@ -22,6 +22,7 @@
 * [Day 17: Chronospatial Computer](./2024/src/bin/day17.rs)
 * [Day 18: RAM Run](./2024/src/bin/day18.rs)
 * [Day 19: Linen Layout](./2024/src/bin/day19.rs)
+* [Day 20: Race Condition](./2024/src/bin/day20.rs)
 
 </details>
 
