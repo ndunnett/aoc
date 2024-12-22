@@ -24,6 +24,7 @@
 * [Day 19: Linen Layout](./2024/src/bin/day19.rs)
 * [Day 20: Race Condition](./2024/src/bin/day20.rs)
 * [Day 21: Keypad Conundrum](./2024/src/bin/day21.rs)
+* [Day 22: Monkey Market](./2024/src/bin/day22.rs)
 
 </details>
 
