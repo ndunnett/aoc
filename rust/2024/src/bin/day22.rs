@@ -44,8 +44,9 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut sequences = FxHashMap::default();
-        let mut seen = FxHashSet::default();
+        // store state in vectors instead of hashmaps/hashsets
+        let mut costs = vec![0; 0xFFFFF];
+        let mut seen = vec![0; 0xFFFFF];
 
         for &secret in &self.secrets {
             let mut result = secret;
@@ -62,19 +63,17 @@ impl Solver for Solution {
 
                 // start checking prices once deltas window is populated
                 // only counting the first occurance of each unique delta sequence
-                if !seen.contains(&deltas) && i > 3 {
-                    seen.insert(deltas);
-                    *sequences.entry(deltas).or_insert(0) += cost;
+                if seen[deltas as usize] != secret && i > 3 {
+                    seen[deltas as usize] = secret;
+                    costs[deltas as usize] += cost;
                 }
 
                 previous_cost = cost;
             }
-
-            seen.clear();
         }
 
-        sequences
-            .values()
+        costs
+            .iter()
             .max()
             .cloned()
             .ok_or(anyhow!("failed to find best sequence"))
