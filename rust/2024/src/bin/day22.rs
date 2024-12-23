@@ -63,7 +63,7 @@ impl Solver for Solution {
 
                 // start checking prices once deltas window is populated
                 // only counting the first occurance of each unique delta sequence
-                if seen[deltas as usize] != secret && i > 3 {
+                if seen[deltas as usize] != secret && i >= 3 {
                     seen[deltas as usize] = secret;
                     costs[deltas as usize] += cost;
                 }
@@ -86,22 +86,27 @@ aoc::solution!();
 mod test {
     use super::{Solution, Solver};
 
-    const INPUT: &str = r"1
+    const INPUT1: &str = r"1
 10
 100
 2024";
 
+    const INPUT2: &str = r"1
+2
+3
+2024";
+
     #[test]
     fn test_part1() {
-        let mut solution = Solution::new(INPUT).unwrap();
+        let mut solution = Solution::new(INPUT1).unwrap();
         let answer = solution.part1().unwrap().to_string();
         assert_eq!(answer, "37327623");
     }
 
     #[test]
     fn test_part2() {
-        let mut solution = Solution::new(INPUT).unwrap();
+        let mut solution = Solution::new(INPUT2).unwrap();
         let answer = solution.part2().unwrap().to_string();
-        assert_eq!(answer, "23"); // fails by returning 24 for some reason
+        assert_eq!(answer, "23");
     }
 }
