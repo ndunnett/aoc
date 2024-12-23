@@ -52,8 +52,9 @@ impl Solver for Solution {
             let mut result = secret;
             let mut previous_cost = result % 10;
             let mut deltas = 0;
+            let mut deltas_filled = 0b11111;
 
-            for i in 0..2000 {
+            for _ in 0..2000 {
                 result = encode(result);
                 let cost = result % 10;
 
@@ -63,7 +64,9 @@ impl Solver for Solution {
 
                 // start checking prices once deltas window is populated
                 // only counting the first occurance of each unique delta sequence
-                if seen[deltas as usize] != secret && i >= 3 {
+                if deltas_filled < 0xFFFFF {
+                    deltas_filled = (deltas_filled << 5) + 0b11111;
+                } else if seen[deltas as usize] != secret {
                     seen[deltas as usize] = secret;
                     costs[deltas as usize] += cost;
                 }
