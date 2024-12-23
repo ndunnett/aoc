@@ -44,7 +44,7 @@ pub mod __runner {
         Ok(format!("{rounded} {unit}"))
     }
 
-    pub const RUN_TIME: std::time::Duration = std::time::Duration::from_millis(250);
+    pub const RUN_TIME: std::time::Duration = std::time::Duration::from_millis(1000);
 }
 
 /// Generates a main function for the runner to call and includes commonly used imports.
@@ -88,7 +88,22 @@ macro_rules! solution {
 
                 let now = std::time::Instant::now();
                 let mut solution = Solution::new(&input)?;
-                let build_duration = now.elapsed();
+                let mut build_duration = now.elapsed();
+
+                if build_duration < __runner::RUN_TIME {
+                    build_duration = std::time::Duration::new(0, 0);
+                    let mut i = 0;
+
+                    while build_duration < __runner::RUN_TIME {
+                        let now = std::time::Instant::now();
+                        let _ = Solution::new(&input)?;
+                        build_duration += now.elapsed();
+                        i += 1
+                    }
+
+                    build_duration = build_duration.div_f64(i as f64);
+                }
+
                 let mut total_duration = build_duration;
 
                 for arg in std::env::args() {
@@ -96,24 +111,29 @@ macro_rules! solution {
                         $(
                             concat!("--part", stringify!($part)) => {
                                 let now = std::time::Instant::now();
-                                let answer = format!("{}", solution.[<part$part>]()?);
-                                let mut duration = now.elapsed();
-                                let mut i = 1;
+                                let mut answer = solution.[<part$part>]()?.to_string();
+                                let mut solution_duration = now.elapsed();
 
-                                while now.elapsed() < __runner::RUN_TIME {
-                                    let now = std::time::Instant::now();
-                                    solution.[<part$part>]()?;
-                                    duration += now.elapsed();
-                                    i += 1
+                                if solution_duration < __runner::RUN_TIME {
+                                    solution_duration = now.elapsed();
+                                    let mut i = 0;
+
+                                    while solution_duration < __runner::RUN_TIME {
+                                        let now = std::time::Instant::now();
+                                        solution.[<part$part>]()?;
+                                        solution_duration += now.elapsed();
+                                        i += 1
+                                    }
+
+                                    solution_duration = solution_duration.div_f64(i as f64);
                                 }
 
-                                let duration = now.elapsed().div_f64(i as f64);
-                                total_duration += duration;
+                                total_duration += solution_duration;
 
                                 println!(
                                     concat!("Part ", stringify!($part), " answer: {} {}"),
-                                    answer.bold().bright_blue(),
-                                    format!("({})", __runner::format_time(duration)?).dimmed(),
+                                    format!("{}", answer.bold().bright_blue()),
+                                    format!("({})", __runner::format_time(solution_duration)?).dimmed(),
                                 );
                             }
                         )+
