@@ -26,6 +26,7 @@
 * [Day 21: Keypad Conundrum](./2024/src/bin/day21.rs)
 * [Day 22: Monkey Market](./2024/src/bin/day22.rs)
 * [Day 23: LAN Party](./2024/src/bin/day23.rs)
+* [Day 24: Crossed Wires](./2024/src/bin/day24.rs)
 
 </details>
 
