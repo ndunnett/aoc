@@ -6,59 +6,28 @@ fn inspect_report(report: &[u8]) -> bool {
     }
 }
 
-fn atoi(chars: &[char]) -> u8 {
-    let mut acc = 0;
-
-    for i in 0..chars.len() {
-        let mut n = chars[chars.len() - 1 - i] as u8 - b'0';
-
-        for _ in 0..i {
-            n = (n << 3) + (n << 1);
-        }
-
-        acc += n;
-    }
-
-    acc
-}
-
 struct Solution {
     reports: Vec<Vec<u8>>,
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let mut reports = vec![Vec::new()];
-        reports.reserve(1000);
-
-        let mut level = Vec::new();
-
-        for c in input.chars() {
-            let i = reports.len() - 1;
-
-            match c {
-                c if c.is_ascii_digit() => level.push(c),
-                ' ' => {
-                    reports[i].push(atoi(&level));
-                    level.clear();
-                }
-                '\n' => {
-                    reports[i].push(atoi(&level));
-                    level.clear();
-                    reports.push(Vec::new());
-                }
-                _ => return Err(anyhow!("invalid character when parsing: '{c:?}'")),
-            }
-        }
-
-        reports.pop();
-        Ok(Self { reports })
+        Ok(Self {
+            reports: input
+                .lines()
+                .map(|line| {
+                    line.split(' ')
+                        .map(str::parse::<u8>)
+                        .collect::<ParseIntResult<Vec<_>>>()
+                })
+                .collect::<ParseIntResult<Vec<_>>>()?,
+        })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
             .reports
-            .par_iter()
+            .iter()
             .filter(|report| inspect_report(report))
             .count())
     }
@@ -66,7 +35,7 @@ impl Solver for Solution {
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
             .reports
-            .par_iter()
+            .iter()
             .filter(|report| {
                 (0..report.len()).any(|i| {
                     inspect_report(&[&report[0..i], &report[i + 1..report.len()]].concat())
