@@ -1,37 +1,11 @@
-#[derive(Clone, Copy, PartialEq)]
-enum Letter {
-    X,
-    M,
-    A,
-    S,
-}
-
-impl TryFrom<char> for Letter {
-    type Error = Error;
-
-    fn try_from(c: char) -> Result<Self, Self::Error> {
-        match c {
-            'X' => Ok(Self::X),
-            'M' => Ok(Self::M),
-            'A' => Ok(Self::A),
-            'S' => Ok(Self::S),
-            _ => Err(anyhow!("failed to parse char: {c}")),
-        }
-    }
-}
-
 struct Grid {
-    letters: Vec<Letter>,
+    letters: Vec<char>,
     size: usize,
 }
 
 impl From<&str> for Grid {
     fn from(input: &str) -> Self {
-        let letters = input
-            .chars()
-            .filter_map(|c| Letter::try_from(c).ok())
-            .collect::<Vec<_>>();
-
+        let letters = input.chars().filter(|&c| c != '\n').collect::<Vec<_>>();
         let size = letters.len().isqrt();
 
         Self { letters, size }
@@ -59,52 +33,68 @@ impl Grid {
 
     fn horizontal_index(&self) -> Index<'_> {
         Box::new((0..self.size - 3).flat_map(move |x| {
-            (0..self.size).map(move |y| {
-                (
-                    x + y * self.size,
-                    x + 1 + y * self.size,
-                    x + 2 + y * self.size,
-                    x + 3 + y * self.size,
-                )
+            (0..self.size).filter_map(move |y| {
+                if matches!(self.letters[x + y * self.size], 'X' | 'S') {
+                    Some((
+                        x + y * self.size,
+                        x + 1 + y * self.size,
+                        x + 2 + y * self.size,
+                        x + 3 + y * self.size,
+                    ))
+                } else {
+                    None
+                }
             })
         }))
     }
 
     fn vertical_index(&self) -> Index<'_> {
         Box::new((0..self.size).flat_map(move |x| {
-            (0..self.size - 3).map(move |y| {
-                (
-                    x + y * self.size,
-                    x + (y + 1) * self.size,
-                    x + (y + 2) * self.size,
-                    x + (y + 3) * self.size,
-                )
+            (0..self.size - 3).filter_map(move |y| {
+                if matches!(self.letters[x + y * self.size], 'X' | 'S') {
+                    Some((
+                        x + y * self.size,
+                        x + (y + 1) * self.size,
+                        x + (y + 2) * self.size,
+                        x + (y + 3) * self.size,
+                    ))
+                } else {
+                    None
+                }
             })
         }))
     }
 
     fn diagonal_up_index(&self) -> Index<'_> {
         Box::new((0..self.size - 3).flat_map(move |x| {
-            (3..self.size).map(move |y| {
-                (
-                    x + y * self.size,
-                    x + 1 + (y - 1) * self.size,
-                    x + 2 + (y - 2) * self.size,
-                    x + 3 + (y - 3) * self.size,
-                )
+            (3..self.size).filter_map(move |y| {
+                if matches!(self.letters[x + y * self.size], 'X' | 'S') {
+                    Some((
+                        x + y * self.size,
+                        x + 1 + (y - 1) * self.size,
+                        x + 2 + (y - 2) * self.size,
+                        x + 3 + (y - 3) * self.size,
+                    ))
+                } else {
+                    None
+                }
             })
         }))
     }
 
     fn diagonal_down_index(&self) -> Index<'_> {
         Box::new((0..self.size - 3).flat_map(move |x| {
-            (0..self.size - 3).map(move |y| {
-                (
-                    x + y * self.size,
-                    x + 1 + (y + 1) * self.size,
-                    x + 2 + (y + 2) * self.size,
-                    x + 3 + (y + 3) * self.size,
-                )
+            (0..self.size - 3).filter_map(move |y| {
+                if matches!(self.letters[x + y * self.size], 'X' | 'S') {
+                    Some((
+                        x + y * self.size,
+                        x + 1 + (y + 1) * self.size,
+                        x + 2 + (y + 2) * self.size,
+                        x + 3 + (y + 3) * self.size,
+                    ))
+                } else {
+                    None
+                }
             })
         }))
     }
@@ -112,7 +102,7 @@ impl Grid {
     fn cross_index(&self) -> Index<'_> {
         Box::new((0..self.size - 2).flat_map(move |x| {
             (0..self.size - 2).filter_map(move |y| {
-                if self.letters[x + 1 + (y + 1) * self.size] == Letter::A {
+                if self.letters[x + 1 + (y + 1) * self.size] == 'A' {
                     Some((
                         x + y * self.size,
                         x + 2 + y * self.size,
@@ -142,7 +132,7 @@ struct GridIterator<'a> {
 }
 
 impl Iterator for GridIterator<'_> {
-    type Item = (Letter, Letter, Letter, Letter);
+    type Item = (char, char, char, char);
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut next = self.index.next();
@@ -197,13 +187,7 @@ impl Solver for Solution {
         Ok(self
             .grid
             .iter()
-            .filter(|tup| {
-                matches!(
-                    tup,
-                    (Letter::X, Letter::M, Letter::A, Letter::S)
-                        | (Letter::S, Letter::A, Letter::M, Letter::X)
-                )
-            })
+            .filter(|tup| matches!(tup, ('X', 'M', 'A', 'S') | ('S', 'A', 'M', 'X')))
             .count())
     }
 
@@ -214,10 +198,10 @@ impl Solver for Solution {
             .filter(|tup| {
                 matches!(
                     tup,
-                    (Letter::M, Letter::M, Letter::S, Letter::S)
-                        | (Letter::M, Letter::S, Letter::S, Letter::M)
-                        | (Letter::S, Letter::S, Letter::M, Letter::M)
-                        | (Letter::S, Letter::M, Letter::M, Letter::S)
+                    ('M', 'M', 'S', 'S')
+                        | ('M', 'S', 'S', 'M')
+                        | ('S', 'S', 'M', 'M')
+                        | ('S', 'M', 'M', 'S')
                 )
             })
             .count())
