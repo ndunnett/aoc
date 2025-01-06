@@ -42,12 +42,7 @@ impl Solver for Solution {
         let mut before: FxHashMap<u8, FxHashSet<u8>> = FxHashMap::default();
         let mut after: FxHashMap<u8, FxHashSet<u8>> = FxHashMap::default();
 
-        for line in rules.lines() {
-            let (a1, a2, _, b1, b2) = line
-                .bytes()
-                .next_tuple()
-                .ok_or(anyhow!("failed to parse rule"))?;
-
+        for (a1, a2, _, b1, b2, _) in rules.bytes().chain([b'\n']).tuples() {
             let a = parse_two_digits(a1, a2);
             let b = parse_two_digits(b1, b2);
             before.entry(a).or_default().insert(b);
@@ -72,30 +67,27 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .updates
-            .par_iter()
-            .filter(|update| self.is_sorted(update))
-            .fold(|| 0, |acc, update| acc + update[update.len() / 2] as u32)
-            .sum::<u32>())
+        Ok(self.updates.iter().fold(0, |acc, update| {
+            if self.is_sorted(update) {
+                acc + update[update.len() / 2] as u32
+            } else {
+                acc
+            }
+        }))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .updates
-            .par_iter()
-            .filter(|update| !self.is_sorted(update))
-            .fold(
-                || 0,
-                |acc, update| {
-                    acc + *update
-                        .iter()
-                        .sorted_by(|a, b| self.compare(a, b))
-                        .nth(update.len() / 2)
-                        .unwrap_or(&0) as u32
-                },
-            )
-            .sum::<u32>())
+        Ok(self.updates.iter().fold(0, |acc, update| {
+            if self.is_sorted(update) {
+                acc
+            } else {
+                acc + *update
+                    .iter()
+                    .sorted_by(|a, b| self.compare(a, b))
+                    .nth(update.len() / 2)
+                    .unwrap_or(&0) as u32
+            }
+        }))
     }
 }
 
