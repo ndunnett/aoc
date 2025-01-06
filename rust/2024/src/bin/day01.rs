@@ -3,18 +3,17 @@ struct Solution {
     b: Vec<usize>,
 }
 
+impl Solution {
+    const SPLIT_PATTERN: [char; 2] = [' ', '\n'];
+}
+
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         let (mut a, mut b): (Vec<_>, Vec<_>) = input
-            .lines()
-            .map(|line| {
-                let (a, b) = line.split_once("   ").expect("failed to split line");
-
-                (
-                    a.parse::<usize>().expect("failed to parse int"),
-                    b.parse::<usize>().expect("failed to parse int"),
-                )
-            })
+            .split(Self::SPLIT_PATTERN)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.parse::<usize>().expect("failed to parse int"))
+            .tuples::<(_, _)>()
             .unzip();
 
         a.sort_unstable();
@@ -32,17 +31,9 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let b_counts = self
-            .b
-            .par_chunk_by(|&a, &b| a == b)
-            .map(|chunk| (chunk[0], chunk.len()))
-            .collect::<HashMap<usize, usize>>();
-
-        Ok(self
-            .a
-            .par_iter()
-            .map(|a| b_counts.get(a).unwrap_or(&0) * a)
-            .sum::<usize>())
+        Ok(self.a.iter().fold(0, |acc, a| {
+            acc + self.b.iter().filter(|&b| a == b).count() * a
+        }))
     }
 }
 
