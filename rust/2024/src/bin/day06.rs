@@ -1,25 +1,18 @@
 use std::iter::Peekable;
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Hash)]
 struct Point {
     x: u8,
     y: u8,
 }
 
 impl Point {
-    fn new<Int>(x: Int, y: Int) -> Self
-    where
-        u8: TryFrom<Int>,
-        <u8 as std::convert::TryFrom<Int>>::Error: fmt::Debug,
-    {
-        Self {
-            x: x.try_into().expect("failed to create point"),
-            y: y.try_into().expect("failed to create point"),
-        }
+    fn new(x: u8, y: u8) -> Self {
+        Self { x, y }
     }
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Hash)]
 enum Direction {
     N,
     S,
@@ -51,14 +44,24 @@ impl TryFrom<&str> for Map {
     fn try_from(input: &str) -> Result<Self, Self::Error> {
         let mut obstacles = FxHashSet::default();
         let mut start = None;
+        let mut x = 0;
+        let mut y = 0;
 
-        for (y, line) in input.lines().enumerate() {
-            for (x, ch) in line.chars().enumerate() {
-                if ch == '#' {
+        for b in input.bytes() {
+            match b {
+                b'#' => {
                     obstacles.insert(Point::new(x, y));
-                } else if ch == '^' {
-                    start = Some(Point::new(x, y));
+                    x += 1;
                 }
+                b'^' => {
+                    start = Some(Point::new(x, y));
+                    x += 1;
+                }
+                b'\n' => {
+                    x = 0;
+                    y += 1;
+                }
+                _ => x += 1,
             }
         }
 
@@ -147,6 +150,7 @@ impl Solver for Solution {
         let points = self
             .map
             .iter()
+            .skip(1)
             .map(|(point, _)| point)
             .collect::<FxHashSet<Point>>();
 
@@ -154,27 +158,21 @@ impl Solver for Solution {
             .par_iter()
             .fold(
                 || 0,
-                |mut acc, &point| {
-                    if point == self.map.start {
-                        return acc;
-                    }
-
+                |acc, &point| {
                     let mut new_map = self.map.clone();
                     new_map.obstacles.insert(point);
 
-                    let chunks = new_map.iter().chunk_by(|(direction, _)| *direction);
-                    let mut path = FxHashSet::default();
-
-                    for (_, chunk) in chunks.into_iter() {
-                        let next = chunk.last().expect("failed to chunk path");
-
-                        if !path.insert(next) {
-                            acc += 1;
-                            break;
-                        }
+                    if new_map
+                        .iter()
+                        .chunk_by(|(_, d)| *d)
+                        .into_iter()
+                        .map(|(_, p)| p.last().expect("failed to chunk path"))
+                        .all_unique()
+                    {
+                        acc
+                    } else {
+                        acc + 1
                     }
-
-                    acc
                 },
             )
             .sum::<usize>())
