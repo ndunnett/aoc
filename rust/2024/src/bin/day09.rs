@@ -1,253 +1,198 @@
-// this is really bad, need to completely rewrite with different ideas
-
-use std::cmp::Ordering;
-
-#[derive(Clone, Copy, PartialEq)]
-enum Space {
-    File(usize, u8),
-    Free(u8),
+#[derive(Copy, Clone)]
+struct File {
+    id: u16,
+    size: u8,
 }
 
-struct FileSystem {
-    space: Vec<Space>,
+impl File {
+    fn new(id: u16, size: u8) -> Self {
+        Self { id, size }
+    }
 }
 
-impl From<&str> for FileSystem {
-    fn from(input: &str) -> Self {
+#[derive(Clone)]
+struct Page {
+    files: [File; 9],
+    start: u8,
+    len: u8,
+    free: u8,
+}
+
+impl Page {
+    const NEW_FILES: [File; 9] = [File { id: 0, size: 0 }; 9];
+
+    fn new(file: File, free: u8) -> Self {
+        let mut data = Self::NEW_FILES;
+        data[0] = file;
+
         Self {
-            space: input
-                .trim()
-                .bytes()
-                .enumerate()
-                .filter_map(|(i, n)| {
-                    if i % 2 == 0 {
-                        Some(Space::File(i / 2, n - b'0'))
-                    } else if n > b'0' {
-                        Some(Space::Free(n - b'0'))
-                    } else {
-                        None
-                    }
-                })
-                .collect(),
-        }
-    }
-}
-
-impl FileSystem {
-    fn iter(&self) -> FileSystemIterator<'_> {
-        FileSystemIterator::from(self)
-    }
-
-    fn iter_part1(&self) -> Part1Iterator<'_> {
-        Part1Iterator::from(self)
-    }
-
-    fn compact_unfragmented(&self) -> Self {
-        let mut space = self.space.clone();
-        let mut i = space.len() - 1;
-
-        while i > 0 {
-            if let Space::File(_, size) = space[i] {
-                for j in 0..i {
-                    if let Space::Free(free) = space[j] {
-                        match free.cmp(&size) {
-                            Ordering::Greater => {
-                                space[j] = Space::Free(free - size);
-                                space.insert(j, space[i]);
-                                i += 1;
-                                space[i] = Space::Free(size);
-                                break;
-                            }
-                            Ordering::Equal => {
-                                space[j] = space[i];
-                                space[i] = Space::Free(size);
-                                break;
-                            }
-                            Ordering::Less => {}
-                        }
-                    }
-                }
-            }
-
-            i -= 1;
-        }
-
-        Self { space }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq)]
-struct Fragment<'a> {
-    space: &'a Space,
-    index: usize,
-    taken: u8,
-}
-
-struct Part1Iterator<'a> {
-    space: &'a Vec<Space>,
-    front: Fragment<'a>,
-    back: Fragment<'a>,
-}
-
-impl<'a> From<&'a FileSystem> for Part1Iterator<'a> {
-    fn from(fs: &'a FileSystem) -> Self {
-        Self {
-            space: &fs.space,
-            front: Fragment {
-                space: &fs.space[0],
-                index: 0,
-                taken: 0,
-            },
-            back: Fragment {
-                space: &fs.space[fs.space.len() - 1],
-                index: fs.space.len() - 1,
-                taken: 0,
-            },
-        }
-    }
-}
-
-impl Iterator for Part1Iterator<'_> {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            match (self.front.space, self.back.space) {
-                (Space::File(front_id, front_size), _) => {
-                    if self.front.taken < *front_size {
-                        // can take from front
-                        self.front.taken += 1;
-                        return Some(*front_id);
-                    } else if self.front.index + 1 < self.back.index {
-                        // can increment front and loop again
-                        self.front.taken = 0;
-                        self.front.index += 1;
-                        self.front.space = &self.space[self.front.index];
-                    } else if let Space::File(back_id, back_size) = self.back.space {
-                        if self.back.taken < *back_size {
-                            // front exhausted, can take from back
-                            self.back.taken += 1;
-                            return Some(*back_id);
-                        } else {
-                            return None;
-                        }
-                    } else {
-                        return None;
-                    }
-                }
-                (Space::Free(front_size), Space::File(back_id, back_size)) => {
-                    if self.front.taken < *front_size {
-                        if self.back.taken < *back_size {
-                            // space at front, can take from back
-                            self.front.taken += 1;
-                            self.back.taken += 1;
-                            return Some(*back_id);
-                        } else if self.back.index - 1 > self.front.index {
-                            // space at front, can increment back and loop again
-                            self.back.taken = 0;
-                            self.back.index -= 1;
-                            self.back.space = &self.space[self.back.index];
-                        } else {
-                            return None;
-                        }
-                    } else if self.front.index + 1 < self.back.index {
-                        // can increment front and loop again
-                        self.front.taken = 0;
-                        self.front.index += 1;
-                        self.front.space = &self.space[self.front.index];
-                    } else if self.back.taken < *back_size {
-                        // front exhausted, can take from back
-                        self.back.taken += 1;
-                        return Some(*back_id);
-                    } else {
-                        return None;
-                    }
-                }
-                (Space::Free(..), Space::Free(..)) => {
-                    if self.back.index - 1 > self.front.index {
-                        // can increment back and loop again
-                        self.back.taken = 0;
-                        self.back.index -= 1;
-                        self.back.space = &self.space[self.back.index];
-                    } else {
-                        return None;
-                    }
-                }
-            }
-        }
-    }
-}
-
-struct FileSystemIterator<'a> {
-    fs: &'a FileSystem,
-    index: usize,
-    taken: u8,
-}
-
-impl<'a> From<&'a FileSystem> for FileSystemIterator<'a> {
-    fn from(fs: &'a FileSystem) -> Self {
-        Self {
-            fs,
-            index: 0,
-            taken: 0,
-        }
-    }
-}
-
-impl Iterator for FileSystemIterator<'_> {
-    type Item = usize;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let (id, size) = match self.fs.space[self.index] {
-            Space::File(id, size) => (id, size),
-            Space::Free(size) => (0, size),
-        };
-
-        if self.taken < size {
-            self.taken += 1;
-            Some(id)
-        } else if self.index + 1 < self.fs.space.len() {
-            self.index += 1;
-            self.taken = 1;
-
-            match self.fs.space[self.index] {
-                Space::File(id, _) => Some(id),
-                Space::Free(..) => Some(0),
-            }
-        } else {
-            None
+            files: data,
+            start: 0,
+            len: 1,
+            free,
         }
     }
 }
 
 struct Solution {
-    fs: FileSystem,
+    fs: Vec<Page>,
+}
+
+impl Solution {
+    // look up table ADD_SERIES[n] == 0 + 1 + 2 ... + n, where n < 10
+    const ADD_SERIES: [usize; 10] = [
+        0,
+        1,
+        1 + 2,
+        1 + 2 + 3,
+        1 + 2 + 3 + 4,
+        1 + 2 + 3 + 4 + 5,
+        1 + 2 + 3 + 4 + 5 + 6,
+        1 + 2 + 3 + 4 + 5 + 6 + 7,
+        1 + 2 + 3 + 4 + 5 + 6 + 7 + 8,
+        1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9,
+    ];
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            fs: FileSystem::from(input),
+            fs: (0..u16::MAX)
+                .zip(input.trim_end().bytes().chain([b'0']).tuples())
+                .map(|(id, (size, free))| Page::new(File::new(id, size - b'0'), free - b'0'))
+                .collect(),
         })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .fs
-            .iter_part1()
-            .enumerate()
-            .map(|(i, id)| i * id)
-            .sum::<usize>())
+        let mut fs = self.fs.clone();
+        let mut front = 0;
+        let mut back = fs.len() - 1;
+
+        // iterate from both ends of the fs vec, taking files from the back and inserting into free space at the front
+        // when front and back indices meet in the middle, all free space is filled
+        while front < back {
+            // increment the front page index when the front page is full
+            if fs[front].free == 0 {
+                front += 1;
+                continue;
+            }
+
+            // move the last file if there is one in the back page, otherwise decrement the back page index
+            if fs[back].len > 0 {
+                let i = fs[back].len as usize - 1;
+                let j = fs[front].len as usize;
+
+                // move the entire file if it fits, otherwise fragment the file
+                if fs[back].files[i].size <= fs[front].free {
+                    let id = fs[back].files[i].id;
+                    let size = fs[back].files[i].size;
+
+                    fs[front].files[j].id = id;
+                    fs[front].files[j].size = size;
+                    fs[front].len += 1;
+                    fs[front].free -= size;
+
+                    fs[back].len -= 1;
+                    fs[back].free += size;
+                } else {
+                    let id = fs[back].files[i].id;
+                    let size = fs[front].free;
+
+                    fs[front].files[j].id = id;
+                    fs[front].files[j].size = size;
+                    fs[front].len += 1;
+                    fs[front].free -= size;
+
+                    fs[back].free += size;
+                    fs[back].files[i].size -= size;
+                }
+            } else {
+                back -= 1;
+            }
+        }
+
+        let mut checksum = 0;
+        let mut i = 0;
+
+        // all pages after the last back page index are zero
+        for page in &fs[0..=back] {
+            // iterate over page from the start index
+            // there is no free space so `i` only increases with file sizes
+            for j in page.start as usize..page.len as usize {
+                // file checksum, where i == first index of the file, j == 0..size:
+                //   => (i + 0) * id + (i + 1) * id + (i + 2) * id ... + (i + j) * id
+                //   => (i * size + 0 + 1 + 2 ... (size - 1)) * id
+                let size = page.files[j].size as usize;
+                checksum += (i * size + Self::ADD_SERIES[size - 1]) * page.files[j].id as usize;
+                i += size;
+            }
+        }
+
+        Ok(checksum)
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .fs
-            .compact_unfragmented()
-            .iter()
-            .enumerate()
-            .map(|(i, id)| i * id)
-            .sum::<usize>())
+        let mut fs = self.fs.clone();
+        let mut highest_unmoved = None;
+        let mut lowest_free = [0_usize; 10];
+
+        // reverse iterate over all pages
+        for back in (0..fs.len()).rev() {
+            let size = fs[back].files[0].size;
+
+            // iterate from the lowest page index that may fit the first file from the current page, up to the current page
+            for front in lowest_free[size as usize]..back {
+                // move the first file from the current page to the front page if it fits
+                if fs[front].free >= size {
+                    let j = fs[front].len as usize;
+                    let id = fs[back].files[0].id;
+
+                    fs[front].files[j].id = id;
+                    fs[front].files[j].size = size;
+                    fs[front].len += 1;
+                    fs[front].free -= size;
+
+                    fs[back].start += 1;
+                    fs[back].files[0].id = 0;
+
+                    // track the lowest page index that can fit the given size
+                    for i in lowest_free.iter_mut().skip(size as usize) {
+                        if front > *i {
+                            *i = front;
+                        }
+                    }
+
+                    break;
+                }
+            }
+
+            // track the highest page index which is not moved
+            if highest_unmoved.is_none() && fs[back].start > 0 {
+                highest_unmoved = Some(back);
+            }
+        }
+
+        let mut checksum = 0;
+        let mut i = 0;
+
+        // all pages after the highest unmoved page are zero
+        for page in &fs[0..=highest_unmoved.unwrap_or(fs.len() - 1)] {
+            // iterate over whole page including empty pages at the start
+            // `i` increments with file size and free space
+            for j in 0..page.len as usize {
+                // file checksum, where i == first index of the file, j == 0..size:
+                //   => (i + 0) * id + (i + 1) * id + (i + 2) * id ... + (i + j) * id
+                //   => (i * size + 0 + 1 + 2 ... (size - 1)) * id
+                let size = page.files[j].size as usize;
+                checksum += (i * size + Self::ADD_SERIES[size - 1]) * page.files[j].id as usize;
+                i += size;
+            }
+
+            i += page.free as usize;
+        }
+
+        Ok(checksum)
     }
 }
 
@@ -257,9 +202,7 @@ aoc::solution!();
 mod test {
     use super::{Solution, Solver};
 
-    // don't forget about the trailing new line
-    const INPUT: &str = r"2333133121414131402
-";
+    const INPUT: &str = r"2333133121414131402";
 
     #[test]
     fn test_part1() {
