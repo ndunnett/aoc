@@ -1,43 +1,26 @@
 struct Equation {
     value: u64,
-    operands: Vec<u64>,
-}
-
-impl TryFrom<&str> for Equation {
-    type Error = Error;
-
-    fn try_from(line: &str) -> Result<Self, Self::Error> {
-        let (value, operands) = line
-            .split_once(": ")
-            .ok_or(anyhow!("failed to split equation"))?;
-
-        let value = value.parse::<u64>()?;
-
-        let operands = operands
-            .split(' ')
-            .map(|s| s.parse::<u64>())
-            .collect::<ParseIntResult<Vec<_>>>()?;
-
-        Ok(Self { value, operands })
-    }
+    operands: [u16; 12],
+    len: u8,
 }
 
 impl Equation {
-    fn is_correct(&self, n: &[u64], c: bool) -> bool {
-        if n.len() == 2 {
-            self.value == n[0] * n[1]
-                || self.value == n[0] + n[1]
-                || (c && self.value == concat(n[0], n[1]))
-        } else {
-            self.is_correct(&[[n[0] * n[1]].as_slice(), &n[2..]].concat(), c)
-                || self.is_correct(&[[n[0] + n[1]].as_slice(), &n[2..]].concat(), c)
-                || (c && self.is_correct(&[[concat(n[0], n[1])].as_slice(), &n[2..]].concat(), c))
+    fn new(value: u64) -> Self {
+        Self {
+            value,
+            operands: [0; 12],
+            len: 0,
         }
     }
-}
 
-fn concat(a: u64, b: u64) -> u64 {
-    a * 10_u64.pow(b.ilog10() + 1) + b
+    fn push_operand(&mut self, n: u64) {
+        self.operands[11 - self.len as usize] = n as u16;
+        self.len += 1;
+    }
+
+    fn slice(&self) -> &[u16] {
+        &self.operands[12 - self.len as usize..12]
+    }
 }
 
 struct Solution {
@@ -46,12 +29,31 @@ struct Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        Ok(Self {
-            equations: input
-                .lines()
-                .map(Equation::try_from)
-                .collect::<Anyhow<Vec<_>>>()?,
-        })
+        let mut bytes = input.trim_end().bytes().peekable();
+        let mut equations = Vec::<Equation>::with_capacity(input.lines().count());
+        let mut in_operands = false;
+
+        while let Some(b) = bytes.next() {
+            if b == b'\n' {
+                in_operands = false;
+            } else if b.is_ascii_digit() {
+                let mut num = (b - b'0') as u64;
+
+                while let Some(b) = bytes.next_if(|b| b.is_ascii_digit()) {
+                    num = (num << 1) + (num << 3) + (b - b'0') as u64;
+                }
+
+                if in_operands {
+                    let i = equations.len() - 1;
+                    equations[i].push_operand(num);
+                } else {
+                    equations.push(Equation::new(num));
+                    in_operands = true;
+                }
+            }
+        }
+
+        Ok(Self { equations })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
@@ -59,11 +61,24 @@ impl Solver for Solution {
             .equations
             .par_iter()
             .filter_map(|e| {
-                if e.is_correct(&e.operands, false) {
-                    Some(e.value)
-                } else {
-                    None
+                let mut queue = Vec::with_capacity(16);
+                queue.push((e.value, e.slice()));
+
+                while let Some((s, n)) = queue.pop() {
+                    if n.len() == 1 && s as u16 == n[0] {
+                        return Some(e.value);
+                    } else if n.len() > 1 {
+                        if s > n[0] as u64 {
+                            queue.push((s - n[0] as u64, &n[1..]));
+                        }
+
+                        if s % n[0] as u64 == 0 {
+                            queue.push((s / n[0] as u64, &n[1..]));
+                        }
+                    }
                 }
+
+                None
             })
             .sum::<u64>())
     }
@@ -73,11 +88,30 @@ impl Solver for Solution {
             .equations
             .par_iter()
             .filter_map(|e| {
-                if e.is_correct(&e.operands, true) {
-                    Some(e.value)
-                } else {
-                    None
+                let mut queue = Vec::with_capacity(16);
+                queue.push((e.value, e.slice()));
+
+                while let Some((s, n)) = queue.pop() {
+                    if n.len() == 1 && s as u16 == n[0] {
+                        return Some(e.value);
+                    } else if n.len() > 1 {
+                        if s > n[0] as u64 {
+                            queue.push((s - n[0] as u64, &n[1..]));
+                        }
+
+                        if s % n[0] as u64 == 0 {
+                            queue.push((s / n[0] as u64, &n[1..]));
+                        }
+
+                        let partition = 10_u64.pow(n[0].ilog10() + 1);
+
+                        if s > partition && s % partition == n[0] as u64 {
+                            queue.push((s / partition, &n[1..]));
+                        }
+                    }
                 }
+
+                None
             })
             .sum::<u64>())
     }
