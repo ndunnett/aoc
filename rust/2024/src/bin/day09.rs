@@ -134,7 +134,7 @@ impl Solver for Solution {
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         let mut fs = self.fs.clone();
-        let mut highest_unmoved = None;
+        let mut highest_populated = 0;
         let mut lowest_free = [0_usize; 10];
 
         // reverse iterate over all pages
@@ -163,21 +163,26 @@ impl Solver for Solution {
                         }
                     }
 
+                    // track the highest page index - moved front page
+                    if highest_populated < front {
+                        highest_populated = front;
+                    }
+
                     break;
                 }
             }
 
-            // track the highest page index which is not moved
-            if highest_unmoved.is_none() && fs[back].start > 0 {
-                highest_unmoved = Some(back);
+            // track the highest page index - unmoved back page
+            if fs[back].start == 0 && highest_populated < back {
+                highest_populated = back;
             }
         }
 
         let mut checksum = 0;
         let mut i = 0;
 
-        // all pages after the highest unmoved page are zero
-        for page in &fs[0..=highest_unmoved.unwrap_or(fs.len() - 1)] {
+        // all pages after the highest populated page are zero
+        for page in &fs[0..=highest_populated] {
             // iterate over whole page including empty pages at the start
             // `i` increments with file size and free space
             for j in 0..page.len as usize {
