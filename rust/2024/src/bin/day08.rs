@@ -1,5 +1,5 @@
 struct Solution {
-    frequencies: FxHashMap<char, FxHashSet<(i64, i64)>>,
+    frequencies: [FxHashSet<(i64, i64)>; (b'z' - b'0') as usize],
     size: i64,
 }
 
@@ -11,29 +11,34 @@ impl Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let mut frequencies: FxHashMap<char, FxHashSet<(i64, i64)>> = FxHashMap::default();
+        let mut frequencies =
+            std::array::from_fn(|_| FxHashSet::with_capacity_and_hasher(4, FxBuildHasher));
 
-        for (y, line) in input.lines().enumerate() {
-            for (x, ch) in line.chars().enumerate() {
-                if ch != '.' {
-                    frequencies
-                        .entry(ch)
-                        .or_default()
-                        .insert((x as i64, y as i64));
-                }
+        let mut x = 0;
+        let mut y = 0;
+
+        for b in input.bytes() {
+            if b == b'\n' {
+                x = 0;
+                y += 1;
+            } else if b != b'.' {
+                frequencies[(b - b'0') as usize].insert((x, y));
+                x += 1;
+            } else {
+                x += 1;
             }
         }
 
         Ok(Self {
             frequencies,
-            size: input.lines().count() as i64,
+            size: y,
         })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut antinodes: FxHashSet<(i64, i64)> = FxHashSet::default();
+        let mut antinodes = FxHashSet::with_capacity_and_hasher(2_usize.pow(9), FxBuildHasher);
 
-        for (_, indices) in self.frequencies.iter() {
+        for indices in &self.frequencies {
             for ((ax, ay), (bx, by)) in indices.iter().tuple_combinations() {
                 let antinode1 = (2 * ax - bx, 2 * ay - by);
                 let antinode2 = (2 * bx - ax, 2 * by - ay);
@@ -52,9 +57,9 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut antinodes: FxHashSet<(i64, i64)> = FxHashSet::default();
+        let mut antinodes = FxHashSet::with_capacity_and_hasher(2_usize.pow(11), FxBuildHasher);
 
-        for (_, indices) in self.frequencies.iter() {
+        for indices in &self.frequencies {
             for ((ax, ay), (bx, by)) in indices.iter().tuple_combinations() {
                 let mut antinode = (*ax, *ay);
                 let dx = bx - ax;
@@ -95,7 +100,8 @@ mod test {
 ........A...
 .........A..
 ............
-............";
+............
+";
 
     #[test]
     fn test_part1() {
