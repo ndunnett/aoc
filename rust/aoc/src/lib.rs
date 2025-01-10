@@ -12,7 +12,7 @@ pub use colored::Colorize;
 pub use itertools::{self, Itertools};
 pub use rayon::prelude::*;
 pub use regex::{self, Regex};
-pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher, FxBuildHasher};
+pub use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet, FxHasher};
 
 pub type Anyhow<T> = anyhow::Result<T>;
 
@@ -42,6 +42,15 @@ pub mod __runner {
         let rounded = (number * shift).round() / shift;
         let unit = s.chars().filter(|c| c.is_alphabetic()).collect::<String>();
         Ok(format!("{rounded} {unit}"))
+    }
+
+    pub fn generalise_durations(durations: &[std::time::Duration]) -> std::time::Duration {
+        let partition = &durations[durations.len() / 4..];
+
+        partition
+            .iter()
+            .sum::<std::time::Duration>()
+            .div_f64(partition.len() as f64)
     }
 
     pub const RUN_TIME: std::time::Duration = std::time::Duration::from_millis(1000);
@@ -88,22 +97,15 @@ macro_rules! solution {
 
                 let now = std::time::Instant::now();
                 let mut solution = Solution::new(&input)?;
-                let mut build_duration = now.elapsed();
+                let mut build_durations = vec![now.elapsed()];
 
-                if build_duration < __runner::RUN_TIME {
-                    build_duration = std::time::Duration::new(0, 0);
-                    let mut i = 0;
-
-                    while build_duration < __runner::RUN_TIME {
-                        let now = std::time::Instant::now();
-                        let _ = Solution::new(&input)?;
-                        build_duration += now.elapsed();
-                        i += 1
-                    }
-
-                    build_duration = build_duration.div_f64(i as f64);
+                while now.elapsed() < __runner::RUN_TIME {
+                    let now = std::time::Instant::now();
+                    solution= Solution::new(&input)?;
+                    build_durations.push(now.elapsed());
                 }
 
+                let build_duration = __runner::generalise_durations(&build_durations);
                 let mut total_duration = build_duration;
 
                 for arg in std::env::args() {
@@ -111,28 +113,25 @@ macro_rules! solution {
                         $(
                             concat!("--part", stringify!($part)) => {
                                 let now = std::time::Instant::now();
-                                let mut answer = solution.[<part$part>]()?.to_string();
-                                let mut solution_duration = now.elapsed();
+                                let answer = solution.[<part$part>]()?.to_string();
+                                let mut solution_durations = vec![now.elapsed()];
 
-                                if solution_duration < __runner::RUN_TIME {
-                                    solution_duration = now.elapsed();
-                                    let mut i = 0;
+                                while now.elapsed() < __runner::RUN_TIME {
+                                    let now = std::time::Instant::now();
+                                    let next_answer = solution.[<part$part>]()?;
+                                    solution_durations.push(now.elapsed());
 
-                                    while solution_duration < __runner::RUN_TIME {
-                                        let now = std::time::Instant::now();
-                                        solution.[<part$part>]()?;
-                                        solution_duration += now.elapsed();
-                                        i += 1
+                                    if next_answer.to_string() != answer {
+                                        return Err(anyhow!("inconsistent result"));
                                     }
-
-                                    solution_duration = solution_duration.div_f64(i as f64);
                                 }
 
+                                let solution_duration = __runner::generalise_durations(&solution_durations);
                                 total_duration += solution_duration;
 
                                 println!(
                                     concat!("Part ", stringify!($part), " answer: {} {}"),
-                                    format!("{}", answer.bold().bright_blue()),
+                                    format!("{}", answer.to_string().bold().bright_blue()),
                                     format!("({})", __runner::format_time(solution_duration)?).dimmed(),
                                 );
                             }
