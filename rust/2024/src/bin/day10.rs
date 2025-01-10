@@ -1,64 +1,75 @@
-struct Solution {
-    trailheads: Vec<Vec<usize>>,
+#[derive(Copy, Clone)]
+struct Trailhead {
+    destinations: [u16; 40],
+    len: u8,
 }
 
-#[inline(always)]
-fn check_neighbour(
-    map: &[u8],
-    queue: &mut Vec<(usize, u8)>,
-    destinations: &mut Vec<usize>,
-    last: usize,
-    b: u8,
-    n: usize,
-) {
-    if n != last && map[n] > b && map[n] - b == 1 {
-        if map[n] == b'9' {
-            destinations.push(n);
-        } else {
-            queue.push((n, map[n]));
+impl Trailhead {
+    fn new() -> Self {
+        Self {
+            destinations: [0; 40],
+            len: 0,
         }
     }
+
+    fn push(&mut self, n: u16) {
+        self.destinations[self.len as usize] = n;
+        self.len += 1;
+    }
+
+    fn len(&self) -> usize {
+        self.len as usize
+    }
+
+    fn unique(&self) -> usize {
+        self.destinations
+            .iter()
+            .take(self.len())
+            .sorted_unstable()
+            .dedup()
+            .count()
+    }
+}
+
+struct Solution {
+    trailheads: Vec<Trailhead>,
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let map = input.bytes().filter(|&b| b != b'\n').collect::<Vec<_>>();
-        let size = input.lines().count();
-
-        let mut trailheads = Vec::new();
-        let mut destinations = Vec::new();
+        let line_len = input.bytes().take_while_inclusive(|&b| b != b'\n').count();
+        let mut trailheads = Vec::with_capacity(400);
         let mut queue = Vec::new();
 
-        for (i, _) in map.iter().enumerate().filter(|(_, &b)| b == b'0') {
+        // perform DFS from every '0' node, ie. each trailhead
+        for i in input.bytes().positions(|b| b == b'0') {
             let mut last = i;
+            let mut trailhead = Trailhead::new();
             queue.push((i, b'0'));
 
             while let Some((i, b)) = queue.pop() {
-                // look left
-                if i % size > 0 {
-                    check_neighbour(&map, &mut queue, &mut destinations, last, b, i - 1);
+                macro_rules! check_neighbour {
+                    ($n:expr) => {
+                        // only continue if not backtracking and next is 1 bigger than current
+                        if $n != last && $n < input.len() && input.as_bytes()[$n] == b + 1 {
+                            // if current is '8', then next must be '9' and therefore a destination of the trailhead
+                            if b == b'8' {
+                                trailhead.push($n as u16);
+                            } else {
+                                queue.push(($n, input.as_bytes()[$n]));
+                            }
+                        }
+                    };
                 }
 
-                // look right
-                if i % size + 1 < size {
-                    check_neighbour(&map, &mut queue, &mut destinations, last, b, i + 1);
-                }
-
-                // look up
-                if i / size > 0 {
-                    check_neighbour(&map, &mut queue, &mut destinations, last, b, i - size);
-                }
-
-                // look down
-                if i / size + 1 < size {
-                    check_neighbour(&map, &mut queue, &mut destinations, last, b, i + size);
-                }
-
+                check_neighbour!(i - 1); // look left
+                check_neighbour!(i + 1); // look right
+                check_neighbour!(i - line_len); // look up
+                check_neighbour!(i + line_len); // look down
                 last = i;
             }
 
-            trailheads.push(destinations.clone());
-            destinations.clear();
+            trailheads.push(trailhead);
             queue.clear();
         }
 
@@ -66,10 +77,7 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .trailheads
-            .iter()
-            .fold(0, |acc, th| acc + th.iter().collect::<FxHashSet<_>>().len()))
+        Ok(self.trailheads.iter().fold(0, |acc, th| acc + th.unique()))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
@@ -90,7 +98,8 @@ mod test {
 45678903
 32019012
 01329801
-10456732";
+10456732
+";
 
     #[test]
     fn test_part1() {
