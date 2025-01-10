@@ -12,7 +12,7 @@ pub use colored::Colorize;
 pub use itertools::{self, Itertools};
 pub use rayon::prelude::*;
 pub use regex::{self, Regex};
-pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher, FxBuildHasher};
 
 pub type Anyhow<T> = anyhow::Result<T>;
 
@@ -65,7 +65,7 @@ pub mod __runner {
 /// pub use itertools::{self, Itertools};
 /// pub use rayon::prelude::*;
 /// pub use regex::{self, Regex};
-/// pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+/// pub use rustc_hash::{FxHashMap, FxHashSet, FxHasher, FxBuildHasher};
 /// ```
 ///
 /// Type definitions:
