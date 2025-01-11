@@ -1,6 +1,6 @@
 struct Solution {
-    a: Vec<usize>,
-    b: Vec<usize>,
+    a: Vec<u32>,
+    b: Vec<u32>,
 }
 
 impl Solution {
@@ -9,15 +9,17 @@ impl Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let (mut a, mut b): (Vec<_>, Vec<_>) = input
+        let (a, b) = input
+            .trim_end()
             .split(Self::SPLIT_PATTERN)
-            .filter(|s| !s.is_empty())
-            .map(|s| s.parse::<usize>().expect("failed to parse int"))
-            .tuples::<(_, _)>()
+            .tuples()
+            .map(|(x, _, _, y)| {
+                (
+                    x.parse::<u32>().expect("failed to parse int"),
+                    y.parse::<u32>().expect("failed to parse int"),
+                )
+            })
             .unzip();
-
-        a.sort_unstable();
-        b.sort_unstable();
 
         Ok(Self { a, b })
     }
@@ -26,14 +28,18 @@ impl Solver for Solution {
         Ok(self
             .a
             .iter()
-            .zip(self.b.iter())
-            .fold(0, |acc, (a, b)| acc + a.abs_diff(*b)))
+            .sorted_unstable()
+            .zip(self.b.iter().sorted_unstable())
+            .map(|(a, b)| a.abs_diff(*b))
+            .sum::<u32>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.a.iter().fold(0, |acc, a| {
-            acc + self.b.iter().filter(|&b| a == b).count() * a
-        }))
+        Ok(self
+            .a
+            .par_iter()
+            .map(|a| a * self.b.iter().filter(|&b| a == b).count() as u32)
+            .sum::<u32>())
     }
 }
 
