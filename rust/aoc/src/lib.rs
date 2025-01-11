@@ -16,6 +16,9 @@ pub use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet, FxHasher};
 
 pub type Anyhow<T> = anyhow::Result<T>;
 
+pub mod utility;
+pub use crate::utility::{NumberParser, NumberParserSigned};
+
 pub trait Solver
 where
     Self: std::marker::Sized + Clone,
@@ -82,6 +85,11 @@ pub mod __runner {
 /// pub type ParseIntResult<T> = Result<T, std::num::ParseIntError>;
 /// pub type ParseFloatResult<T> = Result<T, std::num::ParseFloatError>;
 /// pub type Anyhow<T> = anyhow::Result<T>;
+/// ```
+///
+/// Utility library imports:
+/// ```
+/// pub use crate::utility::{NumberParser, NumberParserSigned};
 /// ```
 #[macro_export]
 macro_rules! solution {
