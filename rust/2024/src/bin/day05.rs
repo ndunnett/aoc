@@ -6,8 +6,8 @@ fn parse_two_digits(a: u8, b: u8) -> u8 {
 }
 
 struct Solution {
-    before: FxHashMap<u8, FxHashSet<u8>>,
-    after: FxHashMap<u8, FxHashSet<u8>>,
+    before: [FxHashSet<u8>; 100],
+    after: [FxHashSet<u8>; 100],
     updates: Vec<Vec<u8>>,
 }
 
@@ -23,41 +23,55 @@ impl Solution {
     }
 
     fn compare(&self, a: &u8, b: &u8) -> Ordering {
-        if self.before.get(b).is_some_and(|after| after.contains(a))
-            || self.after.get(a).is_some_and(|before| before.contains(b))
-        {
+        if self.before[*b as usize].contains(a) || self.after[*a as usize].contains(b) {
             Ordering::Equal
         } else {
             Ordering::Less
         }
     }
+
+    fn make_set(_: usize) -> FxHashSet<u8> {
+        FxHashSet::with_capacity_and_hasher(24, FxBuildHasher)
+    }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let (rules, updates) = input
+        let (rules, updates_chunk) = input
             .split_once("\n\n")
             .ok_or(anyhow!("failed to split sections"))?;
 
-        let mut before: FxHashMap<u8, FxHashSet<u8>> = FxHashMap::default();
-        let mut after: FxHashMap<u8, FxHashSet<u8>> = FxHashMap::default();
+        let mut before: [_; 100] = std::array::from_fn(Self::make_set);
+        let mut after: [_; 100] = std::array::from_fn(Self::make_set);
 
         for (a1, a2, _, b1, b2, _) in rules.bytes().chain([b'\n']).tuples() {
             let a = parse_two_digits(a1, a2);
             let b = parse_two_digits(b1, b2);
-            before.entry(a).or_default().insert(b);
-            after.entry(b).or_default().insert(a);
+            before[a as usize].insert(b);
+            after[b as usize].insert(a);
         }
 
-        let updates = updates
-            .split_inclusive('\n')
-            .map(|line| {
-                line.bytes()
-                    .tuples()
-                    .map(|(a, b, _)| parse_two_digits(a, b))
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
+        let mut updates = Vec::new();
+        let mut update = Vec::new();
+        let mut bytes = updates_chunk.bytes();
+
+        while let Some(b) = bytes.next() {
+            let mut num = b - b'0';
+
+            if let Some(mut b) = bytes.next() {
+                if b.is_ascii_digit() {
+                    num = (num << 1) + (num << 3) + b - b'0';
+                    b = bytes.next().unwrap();
+                }
+
+                update.push(num);
+
+                if b == b'\n' {
+                    updates.push(update.clone());
+                    update.clear();
+                }
+            }
+        }
 
         Ok(Self {
             before,
@@ -67,27 +81,35 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.updates.iter().fold(0, |acc, update| {
-            if self.is_sorted(update) {
-                acc + update[update.len() / 2] as u32
-            } else {
-                acc
-            }
-        }))
+        Ok(self
+            .updates
+            .iter()
+            .filter_map(|update| {
+                if self.is_sorted(update) {
+                    Some(update[update.len() / 2] as u16)
+                } else {
+                    None
+                }
+            })
+            .sum::<u16>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.updates.iter().fold(0, |acc, update| {
-            if self.is_sorted(update) {
-                acc
-            } else {
-                acc + *update
-                    .iter()
-                    .sorted_by(|a, b| self.compare(a, b))
-                    .nth(update.len() / 2)
-                    .unwrap_or(&0) as u32
-            }
-        }))
+        Ok(self
+            .updates
+            .par_iter()
+            .filter_map(|update| {
+                if !self.is_sorted(update) {
+                    update
+                        .iter()
+                        .sorted_by(|a, b| self.compare(a, b))
+                        .nth(update.len() / 2)
+                        .map(|n| *n as u16)
+                } else {
+                    None
+                }
+            })
+            .sum::<u16>())
     }
 }
 
