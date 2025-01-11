@@ -1,3 +1,29 @@
+#[derive(Clone)]
+struct Set {
+    data: Vec<[u64; 3]>,
+}
+
+impl Set {
+    fn new(size: usize) -> Self {
+        Self {
+            data: vec![[0; 3]; size],
+        }
+    }
+
+    fn insert(&mut self, x: u8, y: u8) -> bool {
+        let i = x % 64;
+        let j = (x - i) as usize / 64;
+        let n = 1 << i;
+
+        if self.data[y as usize][j] & n == 0 {
+            self.data[y as usize][j] |= n;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 enum Direction {
     N,
     NE,
@@ -10,85 +36,92 @@ enum Direction {
 }
 
 impl Direction {
-    fn move_(&self, x: i32, y: i32) -> (i32, i32) {
-        match self {
-            Self::N => (x, y - 1),
-            Self::NE => (x + 1, y - 1),
-            Self::E => (x + 1, y),
-            Self::SE => (x + 1, y + 1),
-            Self::S => (x, y + 1),
-            Self::SW => (x - 1, y + 1),
-            Self::W => (x - 1, y),
-            Self::NW => (x - 1, y - 1),
-        }
-    }
-
     const SIDES: [Self; 4] = [Self::N, Self::E, Self::S, Self::W];
 
+    // iterate over each corner and its adjacent edges in clockwise order
     const CORNERS: [[Self; 3]; 4] = [
         [Self::W, Self::NW, Self::N],
         [Self::N, Self::NE, Self::E],
         [Self::E, Self::SE, Self::S],
         [Self::S, Self::SW, Self::W],
     ];
-}
 
-fn get(map: &[&[u8]], x: i32, y: i32) -> Option<u8> {
-    if 0 <= x && x < map[0].len() as i32 && 0 <= y && y < map.len() as i32 {
-        Some(map[y as usize][x as usize])
-    } else {
-        None
+    fn get_next(&self, size: usize, x: u8, y: u8) -> Option<(u8, u8)> {
+        let max = size as u8 - 1;
+
+        match self {
+            Self::N if y > 0 => Some((x, y - 1)),
+            Self::NE if y > 0 && x < max => Some((x + 1, y - 1)),
+            Self::E if x < max => Some((x + 1, y)),
+            Self::SE if y < max && x < max => Some((x + 1, y + 1)),
+            Self::S if y < max => Some((x, y + 1)),
+            Self::SW if y < max && x > 0 => Some((x - 1, y + 1)),
+            Self::W if x > 0 => Some((x - 1, y)),
+            Self::NW if y > 0 && x > 0 => Some((x - 1, y - 1)),
+            _ => None,
+        }
     }
 }
 
 #[derive(Clone)]
-struct Shape {
+struct Region {
     area: usize,
     perimeter: usize,
     corners: usize,
 }
 
-impl Shape {
-    fn fill(map: &[&[u8]], seen: &mut FxHashSet<(i32, i32)>, x: i32, y: i32) -> Self {
-        let plant = get(map, x, y).expect("failed to get plant");
+impl Region {
+    fn flood_fill(map: &[&[u8]], seen: &mut Set, x: u8, y: u8) -> Self {
+        let plant = map[y as usize][x as usize];
         let mut area = 0;
         let mut perimeter = 0;
         let mut corners = 0;
         let mut queue = vec![(x, y)];
 
         while let Some((x, y)) = queue.pop() {
+            // all plants in the region form part of the area
             area += 1;
 
-            for direction in Direction::SIDES {
-                let (next_x, next_y) = direction.move_(x, y);
-
-                match get(map, next_x, next_y) {
-                    Some(next_plant) if next_plant == plant => {
-                        if seen.insert((next_x, next_y)) {
-                            queue.push((next_x, next_y));
+            // look at adjacent plants, if it is the same as the current plant, add it to the flood fill queue
+            // if an adjacent plant differs from the current plant, it must form part of the perimeter
+            perimeter += Direction::SIDES
+                .iter()
+                .filter(|direction| match direction.get_next(map.len(), x, y) {
+                    Some((x, y)) if map[y as usize][x as usize] == plant => {
+                        if seen.insert(x, y) {
+                            queue.push((x, y));
                         }
+
+                        false
                     }
-                    _ => perimeter += 1,
-                }
-            }
+                    _ => true,
+                })
+                .count();
 
-            for corner in Direction::CORNERS {
-                let pat = corner
-                    .iter()
-                    .map(|direction| {
-                        let (next_x, next_y) = direction.move_(x, y);
-
-                        match get(map, next_x, next_y) {
-                            Some(next_plant) if next_plant == plant => 1,
-                            _ => 0,
-                        }
-                    })
-                    .collect::<Vec<_>>();
-
-                if matches!(pat[..], [1, 0, 1] | [0, 0, 0] | [0, 1, 0]) {
-                    corners += 1;
-                }
-            }
+            // the region is a polygon, and the number of corners in a polygon is equal to the number of sides in a polygon
+            // perform pattern recognition on each corner and its adjacent edges of the current plant to count corners of the region
+            // - if the corner differs from its adjacent edges, it must be a corner of the region
+            // - if the corner and its adjacent edges all differ from the current plant, it also must be a corner of the region
+            corners += Direction::CORNERS
+                .iter()
+                .map(|corner| {
+                    corner
+                        .iter()
+                        .map(|direction| {
+                            direction
+                                .get_next(map.len(), x, y)
+                                .is_some_and(|(x, y)| map[y as usize][x as usize] == plant)
+                        })
+                        .tuples()
+                        .filter(|pattern| {
+                            matches!(
+                                pattern,
+                                (true, false, true) | (false, true, false) | (false, false, false)
+                            )
+                        })
+                        .count()
+                })
+                .sum::<usize>();
         }
 
         Self {
@@ -101,7 +134,7 @@ impl Shape {
 
 #[derive(Clone)]
 struct Solution {
-    shapes: Vec<Shape>,
+    regions: Vec<Region>,
 }
 
 impl Solver for Solution {
@@ -111,32 +144,35 @@ impl Solver for Solution {
             .map(|line| line.as_bytes())
             .collect::<Vec<_>>();
 
-        let mut shapes = Vec::new();
-        let mut seen = FxHashSet::default();
+        let mut regions = Vec::with_capacity(600);
+        let mut seen = Set::new(map.len());
 
-        for y in 0..(map.len() as i32) {
-            for x in 0..(map[0].len() as i32) {
-                if seen.insert((x, y)) {
-                    shapes.push(Shape::fill(&map, &mut seen, x, y));
+        // start flood fill on each plant to find each contiguous region of plants in the map
+        for y in 0..(map.len() as u8) {
+            for x in 0..(map[0].len() as u8) {
+                if seen.insert(x, y) {
+                    regions.push(Region::flood_fill(&map, &mut seen, x, y));
                 }
             }
         }
 
-        Ok(Self { shapes })
+        Ok(Self { regions })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
-            .shapes
+            .regions
             .iter()
-            .fold(0, |acc, shape| acc + shape.area * shape.perimeter))
+            .map(|region| region.area * region.perimeter)
+            .sum::<usize>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
-            .shapes
+            .regions
             .iter()
-            .fold(0, |acc, shape| acc + shape.area * shape.corners))
+            .map(|region| region.area * region.corners)
+            .sum::<usize>())
     }
 }
 
