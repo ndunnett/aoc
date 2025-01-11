@@ -9,36 +9,21 @@ struct Machine {
 }
 
 impl Machine {
-    const PATTERN: [char; 4] = ['+', ',', '=', '\n'];
-}
-
-impl TryFrom<&str> for Machine {
-    type Error = Error;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if let Some((ax, ay, bx, by, px, py)) = value
-            .split(&Self::PATTERN)
-            .skip(1)
-            .step_by(2)
-            .map(|s| s.parse::<i64>().expect("failed to parse number"))
-            .next_tuple()
-        {
-            Ok(Self {
-                ax,
-                ay,
-                bx,
-                by,
-                px,
-                py,
-            })
-        } else {
-            Err(anyhow!("failed to parse machine"))
+    fn from_tuple(value: (i64, i64, i64, i64, i64, i64)) -> Self {
+        Self {
+            ax: value.0,
+            ay: value.1,
+            bx: value.2,
+            by: value.3,
+            px: value.4,
+            py: value.5,
         }
     }
-}
 
-impl Machine {
-    fn solve(&self) -> Option<i64> {
+    fn solve<const N: i64>(&self) -> Option<i64> {
+        let px = self.px + N;
+        let py = self.py + N;
+
         // px = i*ax + j*bx
         // py = i*ay + j*by
         //
@@ -54,8 +39,8 @@ impl Machine {
         // answer = 3*i + j
 
         let d = self.ax * self.by - self.ay * self.bx;
-        let di = self.px * self.by - self.py * self.bx;
-        let dj = self.py * self.ax - self.px * self.ay;
+        let di = px * self.by - py * self.bx;
+        let dj = py * self.ax - px * self.ay;
 
         if di % d == 0 && dj % d == 0 {
             Some(3 * di / d + dj / d)
@@ -73,32 +58,26 @@ struct Solution {
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            machines: input
-                .split("\n\n")
-                .map(Machine::try_from)
-                .collect::<Anyhow<Vec<_>>>()?,
+            machines: NumberParser::from(input)
+                .tuples()
+                .map(Machine::from_tuple)
+                .collect(),
         })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self.machines.iter().filter_map(Machine::solve).sum::<i64>())
+        Ok(self
+            .machines
+            .iter()
+            .filter_map(Machine::solve::<0>)
+            .sum::<i64>())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
             .machines
             .iter()
-            .filter_map(|m| {
-                Machine {
-                    ax: m.ax,
-                    ay: m.ay,
-                    bx: m.bx,
-                    by: m.by,
-                    px: m.px + 10000000000000,
-                    py: m.py + 10000000000000,
-                }
-                .solve()
-            })
+            .filter_map(Machine::solve::<10000000000000>)
             .sum::<i64>())
     }
 }
