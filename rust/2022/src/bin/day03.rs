@@ -6,6 +6,7 @@ fn get_priority(char: char) -> i32 {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     input: String,
 }

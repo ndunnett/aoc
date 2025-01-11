@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Solution {
     a: Vec<u32>,
     b: Vec<u32>,

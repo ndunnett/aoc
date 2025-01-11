@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Point {
     x: i32,
     y: i32,
@@ -9,6 +10,7 @@ impl Point {
     }
 }
 
+#[derive(Clone)]
 struct Robot {
     p: Point,
     v: Point,
@@ -33,6 +35,7 @@ impl TryFrom<&str> for Robot {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     robots: Vec<Robot>,
     width: i32,

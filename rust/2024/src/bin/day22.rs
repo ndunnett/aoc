@@ -13,6 +13,7 @@ fn encode(n: u32) -> u32 {
     (b ^ (b << 11)) & 0xFFFFFF
 }
 
+#[derive(Clone)]
 struct Solution {
     secrets: Vec<u32>,
 }

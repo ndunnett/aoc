@@ -22,6 +22,7 @@ fn parse_as_number(line: &str) -> Anyhow<f64> {
         .parse()?)
 }
 
+#[derive(Clone)]
 struct Solution {
     lines: (String, String),
 }

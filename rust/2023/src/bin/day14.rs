@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Solution {
     round: Vec<Vec<bool>>,
     square: Vec<Vec<bool>>,

@@ -19,6 +19,7 @@ fn replace_numbers(line: &str) -> String {
         .replace("nine", "n9e")
 }
 
+#[derive(Clone)]
 struct Solution {
     lines: Vec<String>,
 }

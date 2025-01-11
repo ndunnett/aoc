@@ -31,6 +31,7 @@ impl Direction {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     positions: Vec<Point>,
     bytes: usize,

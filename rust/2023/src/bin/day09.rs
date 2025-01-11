@@ -15,6 +15,7 @@ fn extrapolate(history: Vec<i32>) -> i32 {
         .sum()
 }
 
+#[derive(Clone)]
 struct Solution {
     history: Vec<Vec<i32>>,
 }

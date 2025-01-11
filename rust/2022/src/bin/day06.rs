@@ -18,6 +18,7 @@ fn get_unique_packet(signal: &str, length: usize) -> Anyhow<usize> {
     Err(anyhow!("failed to find unique packet"))
 }
 
+#[derive(Clone)]
 struct Solution {
     input: String,
 }

@@ -1,9 +1,11 @@
+#[derive(Clone)]
 struct Symbol {
     value: char,
     row: usize,
     col: usize,
 }
 
+#[derive(Clone)]
 struct Number {
     value: u32,
     top: usize,
@@ -21,6 +23,7 @@ impl Number {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     numbers: Vec<Number>,
     symbols: Vec<Symbol>,

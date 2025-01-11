@@ -64,6 +64,7 @@ impl Reflection for MirrorView {
     }
 }
 
+#[derive(Clone)]
 struct Mirror {
     points: Vec<Point>,
     extent: Point,
@@ -105,6 +106,7 @@ impl Mirror {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     mirrors: Vec<Mirror>,
 }

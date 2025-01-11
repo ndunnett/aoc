@@ -51,6 +51,7 @@ impl From<&Direction> for u8 {
     }
 }
 
+#[derive(Clone)]
 struct Keypad {
     map: FxHashMap<Point, u8>,
     positions: FxHashMap<u8, Point>,
@@ -93,6 +94,7 @@ impl Keypad {
     ];
 }
 
+#[derive(Clone)]
 struct Solution {
     door: Keypad,
     robot: Keypad,

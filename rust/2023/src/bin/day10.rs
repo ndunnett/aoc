@@ -74,6 +74,7 @@ impl Pipe {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     maze: Vec<Vec<Option<Pipe>>>,
 }

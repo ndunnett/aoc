@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Grid {
     letters: Vec<char>,
     size: usize,
@@ -172,6 +173,7 @@ impl Iterator for GridIterator<'_> {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     grid: Grid,
 }

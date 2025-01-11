@@ -43,6 +43,7 @@ fn parse_command(line: &str) -> (i32, i32, i32) {
     )
 }
 
+#[derive(Clone)]
 struct Solution {
     input: String,
 }

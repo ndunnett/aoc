@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Solution {
     matches: Vec<usize>,
 }

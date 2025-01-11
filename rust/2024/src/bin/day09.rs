@@ -34,6 +34,7 @@ impl Page {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     fs: Vec<Page>,
 }

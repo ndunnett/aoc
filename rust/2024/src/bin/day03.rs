@@ -94,6 +94,7 @@ impl<'a> Parser<'a> {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     do_exprs: Vec<Expr>,
     dont_exprs: Vec<Expr>,

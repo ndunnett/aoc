@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Solution {
     connections: FxHashMap<(u8, u8), FxHashSet<(u8, u8)>>,
 }

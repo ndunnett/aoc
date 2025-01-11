@@ -21,6 +21,7 @@ fn count_permutations<'a>(
     sum
 }
 
+#[derive(Clone)]
 struct Solution {
     counts: Vec<usize>,
 }

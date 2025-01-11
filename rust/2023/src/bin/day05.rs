@@ -5,6 +5,7 @@ fn parse_numbers<S: AsRef<str>>(s: S) -> Anyhow<Vec<i64>> {
         .collect::<Anyhow<Vec<_>>>()
 }
 
+#[derive(Clone)]
 struct Layer {
     start: i64,
     end: i64,
@@ -29,6 +30,7 @@ impl TryFrom<&str> for Layer {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     seeds: Vec<i64>,
     maps: Vec<Vec<Layer>>,

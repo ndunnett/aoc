@@ -61,7 +61,7 @@ impl TryFrom<char> for Condition {
     }
 }
 
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 struct Record {
     conditions: Vec<Condition>,
     groups: Vec<u8>,
@@ -120,6 +120,7 @@ impl Record {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     records: Vec<Record>,
 }

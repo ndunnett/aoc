@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Solution {
     keys: Vec<u32>,
     locks: Vec<u32>,

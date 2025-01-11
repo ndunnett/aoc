@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Frequency {
     data: [(i8, i8); 4],
     len: u8,
@@ -39,6 +40,7 @@ impl Set {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     frequencies: [Frequency; (b'z' - b'0') as usize],
     size: i8,

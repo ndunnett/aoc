@@ -92,6 +92,7 @@ impl State {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     contraption: Vec<Vec<Tile>>,
 }

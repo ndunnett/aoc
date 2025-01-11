@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Clone)]
 enum Operand {
     Literal(u8),
     A,
@@ -27,7 +27,7 @@ impl Operand {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 enum Opcode {
     Adv,
     Bxl,
@@ -39,7 +39,7 @@ enum Opcode {
     Cdv,
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
 struct Operation {
     opcode: Opcode,
     operand: Operand,
@@ -91,6 +91,7 @@ impl TryFrom<(u8, u8)> for Operation {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     program: Vec<u8>,
     operations: Vec<Operation>,

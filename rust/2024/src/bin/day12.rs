@@ -41,6 +41,7 @@ fn get(map: &[&[u8]], x: i32, y: i32) -> Option<u8> {
     }
 }
 
+#[derive(Clone)]
 struct Shape {
     area: usize,
     perimeter: usize,
@@ -98,6 +99,7 @@ impl Shape {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     shapes: Vec<Shape>,
 }

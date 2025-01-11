@@ -19,6 +19,7 @@ impl Point {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     universe: Vec<Point>,
 }

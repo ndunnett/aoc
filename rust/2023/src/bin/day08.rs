@@ -13,6 +13,7 @@ fn lcm(a: usize, b: usize) -> usize {
     a * b / gcd
 }
 
+#[derive(Clone)]
 enum Instruction {
     Left,
     Right,
@@ -28,7 +29,7 @@ impl From<char> for Instruction {
     }
 }
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash)]
 struct Element(u32);
 
 impl Element {
@@ -41,6 +42,7 @@ impl Element {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     instructions: Vec<Instruction>,
     nodes: HashMap<Element, (Element, Element)>,

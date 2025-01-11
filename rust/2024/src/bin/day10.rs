@@ -31,6 +31,7 @@ impl Trailhead {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     trailheads: Vec<Trailhead>,
 }

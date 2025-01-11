@@ -56,6 +56,7 @@ impl PartialOrd for State {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     best_score: usize,
     best_tiles: usize,

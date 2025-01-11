@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Game {
     red: u32,
     green: u32,
@@ -37,6 +38,7 @@ impl Game {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     games: Vec<Game>,
 }

@@ -4,6 +4,7 @@ enum Moves {
     Scissors,
 }
 
+#[derive(Clone)]
 struct Solution {
     lines: Vec<String>,
 }

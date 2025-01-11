@@ -5,6 +5,7 @@ fn parse_two_digits(a: u8, b: u8) -> u8 {
     (n << 1) + (n << 3) + b - b'0'
 }
 
+#[derive(Clone)]
 struct Solution {
     before: [FxHashSet<u8>; 100],
     after: [FxHashSet<u8>; 100],

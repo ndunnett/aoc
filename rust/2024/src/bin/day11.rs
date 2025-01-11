@@ -28,6 +28,7 @@ fn blink(value: u64, blinks: u64, cache: &mut Cache) -> u64 {
     result
 }
 
+#[derive(Clone)]
 struct Solution {
     stones: Vec<u64>,
     cache: Cache,

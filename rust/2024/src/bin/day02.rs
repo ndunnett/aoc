@@ -6,6 +6,7 @@ fn inspect_report(report: &[u8]) -> bool {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     reports: Vec<Vec<u8>>,
 }

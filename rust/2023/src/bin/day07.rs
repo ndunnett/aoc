@@ -129,6 +129,7 @@ impl Hand {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     lines: Vec<String>,
 }

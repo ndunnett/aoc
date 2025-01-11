@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Equation {
     value: u64,
     operands: [u16; 12],
@@ -23,6 +24,7 @@ impl Equation {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     equations: Vec<Equation>,
 }

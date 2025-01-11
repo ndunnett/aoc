@@ -32,6 +32,7 @@ fn eval(
     value
 }
 
+#[derive(Clone)]
 struct Solution {
     values: FxHashMap<Symbol, bool>,
     exprs: FxHashMap<Symbol, Expr>,

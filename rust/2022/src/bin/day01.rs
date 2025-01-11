@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Solution {
     reindeer: Vec<u32>,
 }

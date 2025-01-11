@@ -29,6 +29,7 @@ impl From<&String> for Lens {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     elements: Vec<String>,
 }

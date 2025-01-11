@@ -9,8 +9,8 @@ impl Point {
         Self { x, y }
     }
 
-    fn distance(&self, other: &Point) -> usize {
-        self.x.abs_diff(other.x) as usize + self.y.abs_diff(other.y) as usize
+    fn distance(&self, other: &Point) -> u16 {
+        self.x.abs_diff(other.x) as u16 + self.y.abs_diff(other.y) as u16
     }
 }
 
@@ -35,25 +35,25 @@ impl Direction {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
-    track: Vec<Point>,
+    track: Vec<(u16, Point)>,
 }
 
 impl Solution {
-    fn find_cheats(&self, min_time: usize, max_distance: usize) -> usize {
+    fn find_cheats(&self, min_time: u16, max_distance: u16) -> usize {
         self.track
-            .iter()
-            .enumerate()
-            .flat_map(|(at, ap)| {
-                self.track.iter().enumerate().skip(at).map(move |(bt, bp)| {
-                    let d = ap.distance(bp);
-
-                    if d <= max_distance && bt > at && bt - at - d >= min_time {
-                        1
-                    } else {
-                        0
-                    }
-                })
+            .par_iter()
+            .take(self.track.len() - min_time as usize)
+            .map(|(at, ap)| {
+                self.track
+                    .iter()
+                    .skip((*at + min_time) as usize)
+                    .filter(|(bt, bp)| {
+                        let d = ap.distance(bp);
+                        bt > at && bt - at - d >= min_time && d <= max_distance
+                    })
+                    .count()
             })
             .sum()
     }
@@ -84,14 +84,14 @@ impl Solver for Solution {
         let start = start.ok_or(anyhow!("failed to find start"))?;
         let finish = finish.ok_or(anyhow!("failed to find finish"))?;
 
-        let mut track = vec![start];
+        let mut track = vec![(0, start)];
 
         while let Some(p) = Direction::ALL
             .iter()
-            .filter_map(|d| d.next_move(track.last()?, size))
-            .find(|p| !walls.contains(p) && (track.len() < 2 || track[track.len() - 2] != *p))
+            .filter_map(|d| d.next_move(&track.last()?.1, size))
+            .find(|p| !walls.contains(p) && (track.len() < 2 || track[track.len() - 2].1 != *p))
         {
-            track.push(p);
+            track.push((track.len() as u16, p));
 
             if p == finish {
                 break;

@@ -1,3 +1,4 @@
+#[derive(Clone)]
 struct Machine {
     ax: i64,
     ay: i64,
@@ -64,6 +65,7 @@ impl Machine {
     }
 }
 
+#[derive(Clone)]
 struct Solution {
     machines: Vec<Machine>,
 }
