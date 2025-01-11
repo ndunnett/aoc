@@ -18,7 +18,7 @@ pub type Anyhow<T> = anyhow::Result<T>;
 
 pub trait Solver
 where
-    Self: std::marker::Sized,
+    Self: std::marker::Sized + Clone,
 {
     fn new(input: &str) -> Anyhow<Self>;
     fn part1(&mut self) -> Anyhow<impl fmt::Display>;
@@ -101,7 +101,7 @@ macro_rules! solution {
 
                 while now.elapsed() < __runner::RUN_TIME {
                     let now = std::time::Instant::now();
-                    solution= Solution::new(&input)?;
+                    solution = Solution::new(&input)?;
                     build_durations.push(now.elapsed());
                 }
 
@@ -112,13 +112,15 @@ macro_rules! solution {
                     match arg.as_str() {
                         $(
                             concat!("--part", stringify!($part)) => {
+                                let mut temp_sol = solution.clone();
                                 let now = std::time::Instant::now();
-                                let answer = solution.[<part$part>]()?.to_string();
+                                let answer = temp_sol.[<part$part>]()?.to_string();
                                 let mut solution_durations = vec![now.elapsed()];
 
                                 while now.elapsed() < __runner::RUN_TIME {
+                                    let mut temp_sol = solution.clone();
                                     let now = std::time::Instant::now();
-                                    let next_answer = solution.[<part$part>]()?;
+                                    let next_answer = temp_sol.[<part$part>]()?;
                                     solution_durations.push(now.elapsed());
 
                                     if next_answer.to_string() != answer {
