@@ -1,11 +1,11 @@
 #[derive(Clone)]
 struct Point {
-    x: i32,
-    y: i32,
+    x: i16,
+    y: i16,
 }
 
 impl Point {
-    fn new(x: i32, y: i32) -> Self {
+    fn new(x: i16, y: i16) -> Self {
         Self { x, y }
     }
 }
@@ -16,30 +16,11 @@ struct Robot {
     v: Point,
 }
 
-impl Robot {
-    const SPLIT_PATTERN: [char; 3] = ['=', ',', ' '];
-}
-
-impl TryFrom<&str> for Robot {
-    type Error = Error;
-
-    fn try_from(line: &str) -> Result<Self, Self::Error> {
-        if let Some((_, px, py, _, vx, vy)) = line.split(&Self::SPLIT_PATTERN).next_tuple() {
-            Ok(Self {
-                p: Point::new(px.parse::<i32>()?, py.parse::<i32>()?),
-                v: Point::new(vx.parse::<i32>()?, vy.parse::<i32>()?),
-            })
-        } else {
-            Err(anyhow!("failed to parse robot"))
-        }
-    }
-}
-
 #[derive(Clone)]
 struct Solution {
     robots: Vec<Robot>,
-    width: i32,
-    height: i32,
+    width: i16,
+    height: i16,
 }
 
 impl Solver for Solution {
@@ -47,10 +28,13 @@ impl Solver for Solution {
         Ok(Self {
             width: 101,
             height: 103,
-            robots: input
-                .lines()
-                .map(Robot::try_from)
-                .collect::<Anyhow<Vec<_>>>()?,
+            robots: NumberParserSigned::from(input)
+                .tuples()
+                .map(|(px, py, vx, vy)| Robot {
+                    p: Point::new(px, py),
+                    v: Point::new(vx, vy),
+                })
+                .collect(),
         })
     }
 
@@ -82,34 +66,39 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        (100..(self.width * self.height))
+        // divide the room to get the middle thirds
+        let ha = self.height / 3;
+        let hb = self.height - ha;
+        let wa = self.width / 3;
+        let wb = self.width - wa;
+
+        // approximate entropy in the middle of the room after 100 seconds until it reaches a predetermined threshold
+        // the density of the robots should be much higher when forming a pattern than when randomly distributed
+        //
+        // expected robot count in the middle when randomly distributed:
+        //   e = mid_positions * p
+        //   => mid_positions = width // 3 * height // 3 = 101 // 3 * 103 // 3 = 1122
+        //   => p = robot_count / (width * height) = 500 / (101 * 103) = 0.048
+        //   => e = 1122 * 0.048 = 53.856
+        //
+        // so when the robot count in the middle is significantly higher than 53.856, it signifies that there must be a pattern
+        (100..(self.width as i32 * self.height as i32))
             .into_par_iter()
-            .find_first(|t| {
-                let mut grid = vec![0_u128; self.height as usize];
+            .find_any(|t| {
+                self.robots
+                    .iter()
+                    .filter(|r| {
+                        let (x, y) = (
+                            (r.p.x as i32 + r.v.x as i32 * t).rem_euclid(self.width as i32) as i16,
+                            (r.p.y as i32 + r.v.y as i32 * t).rem_euclid(self.height as i32) as i16,
+                        );
 
-                for robot in &self.robots {
-                    let (x, y) = (
-                        (robot.p.x + robot.v.x * t).rem_euclid(self.width) as usize,
-                        (robot.p.y + robot.v.y * t).rem_euclid(self.height) as usize,
-                    );
-
-                    grid[y] |= 1 << x;
-                }
-
-                // looking to see 2 rows with a continous line of at least 16 robots
-                // this will match the lines above and below the christmas tree
-                grid.iter()
-                    .filter(|&row| {
-                        (0..self.width)
-                            .step_by(16)
-                            .map(|x| 0xFFFF << x)
-                            .any(|mask| row & mask == mask)
+                        x > wa && x < wb && y > ha && y < hb
                     })
-                    .take(2)
                     .count()
-                    >= 2
+                    >= 150
             })
-            .ok_or(anyhow!("failed to solve"))
+            .ok_or(anyhow!("failed to solve part 2"))
     }
 }
 
