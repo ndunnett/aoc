@@ -12,16 +12,29 @@ struct Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        Ok(Self {
-            reports: input
-                .lines()
-                .map(|line| {
-                    line.split(' ')
-                        .map(str::parse::<u8>)
-                        .collect::<ParseIntResult<Vec<_>>>()
-                })
-                .collect::<ParseIntResult<Vec<_>>>()?,
-        })
+        let mut reports = Vec::with_capacity(input.lines().count());
+        let mut report = Vec::new();
+        let mut bytes = input.bytes();
+
+        while let Some(b) = bytes.next() {
+            let mut num = b - b'0';
+
+            if let Some(mut b) = bytes.next() {
+                if b.is_ascii_digit() {
+                    num = (num << 1) + (num << 3) + b - b'0';
+                    b = bytes.next().unwrap();
+                }
+
+                report.push(num);
+
+                if b == b'\n' {
+                    reports.push(report.clone());
+                    report.clear();
+                }
+            }
+        }
+
+        Ok(Self { reports })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
@@ -35,7 +48,7 @@ impl Solver for Solution {
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         Ok(self
             .reports
-            .iter()
+            .par_iter()
             .filter(|report| {
                 (0..report.len()).any(|i| {
                     inspect_report(&[&report[0..i], &report[i + 1..report.len()]].concat())
@@ -51,7 +64,6 @@ aoc::solution!();
 mod test {
     use super::{Solution, Solver};
 
-    // actual input has a trailing new line
     const INPUT: &str = r"7 6 4 2 1
 1 2 7 8 9
 9 7 6 2 1
