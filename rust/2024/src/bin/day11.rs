@@ -1,4 +1,6 @@
-fn blink(value: u64, blinks: u64, cache: &mut FxHashMap<u64, u64>) -> u64 {
+type Cache = FxHashMap<u64, u64>;
+
+fn blink(value: u64, blinks: u64, cache: &mut Cache) -> u64 {
     if blinks == 0 {
         return 1;
     }
@@ -28,16 +30,14 @@ fn blink(value: u64, blinks: u64, cache: &mut FxHashMap<u64, u64>) -> u64 {
 
 struct Solution {
     stones: Vec<u64>,
+    cache: Cache,
 }
 
 impl Solution {
-    fn solve(&self, blinks: u64) -> u64 {
+    fn solve(&mut self, blinks: u64) -> u64 {
         self.stones
-            .par_iter()
-            .fold(
-                || 0,
-                |acc, &value| acc + blink(value, blinks, &mut FxHashMap::default()),
-            )
+            .iter()
+            .map(|&value| blink(value, blinks, &mut self.cache))
             .sum()
     }
 }
@@ -50,6 +50,7 @@ impl Solver for Solution {
                 .split(' ')
                 .map(str::parse::<u64>)
                 .collect::<ParseIntResult<Vec<_>>>()?,
+            cache: Cache::with_capacity_and_hasher(150000, FxBuildHasher),
         })
     }
 
