@@ -31,31 +31,22 @@ struct Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let mut bytes = input.trim_end().bytes().peekable();
-        let mut equations = Vec::<Equation>::with_capacity(input.lines().count());
-        let mut in_operands = false;
+        Ok(Self {
+            equations: input
+                .lines()
+                .map(|line| {
+                    let mut parser = NumberParser::from(line);
+                    let value = parser.next().expect("failed to parse equation");
+                    let mut equation = Equation::new(value);
 
-        while let Some(b) = bytes.next() {
-            if b == b'\n' {
-                in_operands = false;
-            } else if b.is_ascii_digit() {
-                let mut num = (b - b'0') as u64;
+                    for n in parser {
+                        equation.push_operand(n);
+                    }
 
-                while let Some(b) = bytes.next_if(|b| b.is_ascii_digit()) {
-                    num = (num << 1) + (num << 3) + (b - b'0') as u64;
-                }
-
-                if in_operands {
-                    let i = equations.len() - 1;
-                    equations[i].push_operand(num);
-                } else {
-                    equations.push(Equation::new(num));
-                    in_operands = true;
-                }
-            }
-        }
-
-        Ok(Self { equations })
+                    equation
+                })
+                .collect(),
+        })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {

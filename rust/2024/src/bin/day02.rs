@@ -13,29 +13,12 @@ struct Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let mut reports = Vec::with_capacity(input.lines().count());
-        let mut report = Vec::new();
-        let mut bytes = input.bytes();
-
-        while let Some(b) = bytes.next() {
-            let mut num = b - b'0';
-
-            if let Some(mut b) = bytes.next() {
-                if b.is_ascii_digit() {
-                    num = (num << 1) + (num << 3) + b - b'0';
-                    b = bytes.next().unwrap();
-                }
-
-                report.push(num);
-
-                if b == b'\n' {
-                    reports.push(report.clone());
-                    report.clear();
-                }
-            }
-        }
-
-        Ok(Self { reports })
+        Ok(Self {
+            reports: input
+                .lines()
+                .map(|line| NumberParser::from(line).collect())
+                .collect(),
+        })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {

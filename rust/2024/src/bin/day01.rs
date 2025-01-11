@@ -4,24 +4,9 @@ struct Solution {
     b: Vec<u32>,
 }
 
-impl Solution {
-    const SPLIT_PATTERN: [char; 2] = [' ', '\n'];
-}
-
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let (a, b) = input
-            .trim_end()
-            .split(Self::SPLIT_PATTERN)
-            .tuples()
-            .map(|(x, _, _, y)| {
-                (
-                    x.parse::<u32>().expect("failed to parse int"),
-                    y.parse::<u32>().expect("failed to parse int"),
-                )
-            })
-            .unzip();
-
+        let (a, b) = NumberParser::<u32>::from(input).tuples().unzip();
         Ok(Self { a, b })
     }
 

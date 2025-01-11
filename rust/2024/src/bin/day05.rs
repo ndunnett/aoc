@@ -1,10 +1,5 @@
 use std::cmp::Ordering;
 
-fn parse_two_digits(a: u8, b: u8) -> u8 {
-    let n = a - b'0';
-    (n << 1) + (n << 3) + b - b'0'
-}
-
 #[derive(Clone)]
 struct Solution {
     before: [FxHashSet<u8>; 100],
@@ -38,46 +33,25 @@ impl Solution {
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let (rules, updates_chunk) = input
+        let (rules, updates) = input
             .split_once("\n\n")
             .ok_or(anyhow!("failed to split sections"))?;
 
         let mut before: [_; 100] = std::array::from_fn(Self::make_set);
         let mut after: [_; 100] = std::array::from_fn(Self::make_set);
 
-        for (a1, a2, _, b1, b2, _) in rules.bytes().chain([b'\n']).tuples() {
-            let a = parse_two_digits(a1, a2);
-            let b = parse_two_digits(b1, b2);
+        for (a, b) in NumberParser::from(rules).tuples() {
             before[a as usize].insert(b);
             after[b as usize].insert(a);
-        }
-
-        let mut updates = Vec::new();
-        let mut update = Vec::new();
-        let mut bytes = updates_chunk.bytes();
-
-        while let Some(b) = bytes.next() {
-            let mut num = b - b'0';
-
-            if let Some(mut b) = bytes.next() {
-                if b.is_ascii_digit() {
-                    num = (num << 1) + (num << 3) + b - b'0';
-                    b = bytes.next().unwrap();
-                }
-
-                update.push(num);
-
-                if b == b'\n' {
-                    updates.push(update.clone());
-                    update.clear();
-                }
-            }
         }
 
         Ok(Self {
             before,
             after,
-            updates,
+            updates: updates
+                .lines()
+                .map(|line| NumberParser::from(line).collect())
+                .collect(),
         })
     }
 

@@ -46,11 +46,7 @@ impl Solution {
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            stones: input
-                .trim()
-                .split(' ')
-                .map(str::parse::<u64>)
-                .collect::<ParseIntResult<Vec<_>>>()?,
+            stones: NumberParser::from(input).collect(),
             cache: Cache::with_capacity_and_hasher(150000, FxBuildHasher),
         })
     }
