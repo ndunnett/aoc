@@ -1,19 +1,59 @@
+struct Frequency {
+    data: [(i8, i8); 4],
+    len: u8,
+}
+
+impl Frequency {
+    fn new() -> Self {
+        Self {
+            data: [(0, 0); 4],
+            len: 0,
+        }
+    }
+
+    fn push(&mut self, point: (i8, i8)) {
+        self.data[self.len as usize] = point;
+        self.len += 1;
+    }
+
+    fn iter(&self) -> std::slice::Iter<'_, (i8, i8)> {
+        self.data[..self.len as usize].iter()
+    }
+}
+
+struct Set {
+    data: [u64; 50],
+}
+
+impl Set {
+    fn new() -> Self {
+        Self { data: [0; 50] }
+    }
+
+    fn insert(&mut self, point: (i8, i8)) {
+        self.data[point.0 as usize] |= 1 << point.1 as usize;
+    }
+
+    fn len(&self) -> u32 {
+        self.data.iter().map(|s| s.count_ones()).sum()
+    }
+}
+
 struct Solution {
-    frequencies: [FxHashSet<(i64, i64)>; (b'z' - b'0') as usize],
-    size: i64,
+    frequencies: [Frequency; (b'z' - b'0') as usize],
+    size: i8,
 }
 
 impl Solution {
-    fn in_range(&self, point: (i64, i64)) -> bool {
+    #[inline(always)]
+    fn in_range(&self, point: (i8, i8)) -> bool {
         0 <= point.0 && point.0 < self.size && 0 <= point.1 && point.1 < self.size
     }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let mut frequencies =
-            std::array::from_fn(|_| FxHashSet::with_capacity_and_hasher(4, FxBuildHasher));
-
+        let mut frequencies = std::array::from_fn(|_| Frequency::new());
         let mut x = 0;
         let mut y = 0;
 
@@ -22,7 +62,7 @@ impl Solver for Solution {
                 x = 0;
                 y += 1;
             } else if b != b'.' {
-                frequencies[(b - b'0') as usize].insert((x, y));
+                frequencies[(b - b'0') as usize].push((x, y));
                 x += 1;
             } else {
                 x += 1;
@@ -36,19 +76,19 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut antinodes = FxHashSet::with_capacity_and_hasher(2_usize.pow(9), FxBuildHasher);
+        let mut antinodes = Set::new();
 
-        for indices in &self.frequencies {
-            for ((ax, ay), (bx, by)) in indices.iter().tuple_combinations() {
-                let antinode1 = (2 * ax - bx, 2 * ay - by);
-                let antinode2 = (2 * bx - ax, 2 * by - ay);
+        for frequency in &self.frequencies {
+            for ((ax, ay), (bx, by)) in frequency.iter().tuple_combinations() {
+                let antinode_a = (2 * ax - bx, 2 * ay - by);
+                let antinode_b = (2 * bx - ax, 2 * by - ay);
 
-                if self.in_range(antinode1) {
-                    antinodes.insert(antinode1);
+                if self.in_range(antinode_a) {
+                    antinodes.insert(antinode_a);
                 }
 
-                if self.in_range(antinode2) {
-                    antinodes.insert(antinode2);
+                if self.in_range(antinode_b) {
+                    antinodes.insert(antinode_b);
                 }
             }
         }
@@ -57,24 +97,26 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut antinodes = FxHashSet::with_capacity_and_hasher(2_usize.pow(11), FxBuildHasher);
+        let mut antinodes = Set::new();
 
-        for indices in &self.frequencies {
-            for ((ax, ay), (bx, by)) in indices.iter().tuple_combinations() {
+        for frequency in &self.frequencies {
+            for ((ax, ay), (bx, by)) in frequency.iter().tuple_combinations() {
                 let mut antinode = (*ax, *ay);
                 let dx = bx - ax;
                 let dy = by - ay;
 
                 while self.in_range(antinode) {
                     antinodes.insert(antinode);
-                    antinode = (antinode.0 - dx, antinode.1 - dy);
+                    antinode.0 -= dx;
+                    antinode.1 -= dy;
                 }
 
                 antinode = (ax + dx, ay + dy);
 
                 while self.in_range(antinode) {
                     antinodes.insert(antinode);
-                    antinode = (antinode.0 + dx, antinode.1 + dy);
+                    antinode.0 += dx;
+                    antinode.1 += dy;
                 }
             }
         }
