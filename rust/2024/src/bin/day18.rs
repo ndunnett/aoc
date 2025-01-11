@@ -32,6 +32,44 @@ impl Direction {
 }
 
 #[derive(Clone)]
+struct Set {
+    data: [u128; 100],
+}
+
+impl Set {
+    fn new() -> Self {
+        Self { data: [0; 100] }
+    }
+
+    fn contains(&mut self, p: &Point) -> bool {
+        self.data[p.y as usize] & (1 << p.x) > 0
+    }
+
+    fn insert(&mut self, p: &Point) -> bool {
+        let n = 1 << p.x;
+
+        if self.data[p.y as usize] & n == 0 {
+            self.data[p.y as usize] |= n;
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl From<&[Point]> for Set {
+    fn from(points: &[Point]) -> Self {
+        let mut map = Self::new();
+
+        for p in points {
+            map.data[p.y as usize] |= 1 << p.x;
+        }
+
+        map
+    }
+}
+
+#[derive(Clone)]
 struct Solution {
     positions: Vec<Point>,
     bytes: usize,
@@ -39,10 +77,8 @@ struct Solution {
 }
 
 impl Solution {
-    const SPLIT_PATTERN: [char; 2] = [',', '\n'];
-
     fn find_path(&self, bytes: usize) -> Option<usize> {
-        let mut map = FxHashSet::from_iter(self.positions[..bytes].iter().cloned());
+        let mut map = Set::from(&self.positions[..bytes]);
         let mut queue = vec![(Point::new(0, 0), 0)];
 
         while let Some((point, steps)) = queue.pop() {
@@ -50,7 +86,7 @@ impl Solution {
                 return Some(steps);
             }
 
-            if !map.insert(point) {
+            if !map.insert(&point) {
                 continue;
             }
 
@@ -77,11 +113,10 @@ impl Solver for Solution {
         Ok(Self {
             bytes: 1024,
             finish: Point::new(70, 70),
-            positions: input
-                .split(Self::SPLIT_PATTERN)
+            positions: NumberParser::from(input)
                 .tuples()
-                .map(|(x, y)| Ok(Point::new(x.parse::<u8>()?, y.parse::<u8>()?)))
-                .collect::<ParseIntResult<Vec<_>>>()?,
+                .map(|(x, y)| Point::new(x, y))
+                .collect(),
         })
     }
 
