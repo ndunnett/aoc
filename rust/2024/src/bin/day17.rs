@@ -16,15 +16,6 @@ impl Operand {
             _ => Err(anyhow!("failed to parse combo operand")),
         }
     }
-
-    fn get_value(&self, a: usize, b: usize, c: usize) -> usize {
-        match self {
-            Self::Literal(n) => *n as usize,
-            Self::A => a,
-            Self::B => b,
-            Self::C => c,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -45,40 +36,40 @@ struct Operation {
     operand: Operand,
 }
 
-impl TryFrom<(u8, u8)> for Operation {
+impl TryFrom<(&u8, &u8)> for Operation {
     type Error = Error;
 
-    fn try_from(value: (u8, u8)) -> Result<Self, Self::Error> {
+    fn try_from(value: (&u8, &u8)) -> Result<Self, Self::Error> {
         match value {
-            (0, operand) => Ok(Self {
+            (0, &operand) => Ok(Self {
                 opcode: Opcode::Adv,
                 operand: Operand::parse_combo(operand)?,
             }),
-            (1, operand) => Ok(Self {
+            (1, &operand) => Ok(Self {
                 opcode: Opcode::Bxl,
                 operand: Operand::Literal(operand),
             }),
-            (2, operand) => Ok(Self {
+            (2, &operand) => Ok(Self {
                 opcode: Opcode::Bst,
                 operand: Operand::parse_combo(operand)?,
             }),
-            (3, operand) => Ok(Self {
+            (3, &operand) => Ok(Self {
                 opcode: Opcode::Jnz,
                 operand: Operand::Literal(operand),
             }),
-            (4, operand) => Ok(Self {
+            (4, &operand) => Ok(Self {
                 opcode: Opcode::Bxc,
                 operand: Operand::Literal(operand),
             }),
-            (5, operand) => Ok(Self {
+            (5, &operand) => Ok(Self {
                 opcode: Opcode::Out,
                 operand: Operand::parse_combo(operand)?,
             }),
-            (6, operand) => Ok(Self {
+            (6, &operand) => Ok(Self {
                 opcode: Opcode::Bdv,
                 operand: Operand::parse_combo(operand)?,
             }),
-            (7, operand) => Ok(Self {
+            (7, &operand) => Ok(Self {
                 opcode: Opcode::Cdv,
                 operand: Operand::parse_combo(operand)?,
             }),
@@ -91,6 +82,60 @@ impl TryFrom<(u8, u8)> for Operation {
     }
 }
 
+struct Computation<'a> {
+    operations: &'a [Operation],
+    pointer: usize,
+    a: usize,
+    b: usize,
+    c: usize,
+}
+
+impl Computation<'_> {
+    #[inline(always)]
+    fn get_value(&self, operand: &Operand) -> usize {
+        match operand {
+            Operand::Literal(n) => *n as usize,
+            Operand::A => self.a,
+            Operand::B => self.b,
+            Operand::C => self.c,
+        }
+    }
+}
+
+impl Iterator for Computation<'_> {
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // Chronospatial Computer virtual machine implemented as an iterator
+        // each iteration is an output value
+        while let Some(Operation { opcode, operand }) = self.operations.get(self.pointer) {
+            match (opcode, operand) {
+                (Opcode::Adv, _) => self.a /= 2_usize.pow(self.get_value(operand) as u32),
+                (Opcode::Bxl, Operand::Literal(n)) => self.b ^= *n as usize,
+                (Opcode::Bst, _) => self.b = self.get_value(operand) % 8,
+                (Opcode::Jnz, Operand::Literal(n)) => {
+                    if self.a != 0 {
+                        self.pointer = *n as usize / 2;
+                        continue;
+                    }
+                }
+                (Opcode::Bxc, _) => self.b ^= self.c,
+                (Opcode::Out, _) => {
+                    self.pointer += 1;
+                    return Some((self.get_value(operand) % 8) as u8);
+                }
+                (Opcode::Bdv, _) => self.b = self.a / 2_usize.pow(self.get_value(operand) as u32),
+                (Opcode::Cdv, _) => self.c = self.a / 2_usize.pow(self.get_value(operand) as u32),
+                _ => unreachable!(),
+            }
+
+            self.pointer += 1;
+        }
+
+        None
+    }
+}
+
 #[derive(Clone)]
 struct Solution {
     program: Vec<u8>,
@@ -99,61 +144,29 @@ struct Solution {
 }
 
 impl Solution {
-    fn compute(&self, mut a: usize) -> Anyhow<Vec<u8>> {
-        let mut b = 0;
-        let mut c = 0;
-        let mut output = Vec::new();
-        let mut pointer = 0;
-
-        while let Some(Operation { opcode, operand }) = self.operations.get(pointer) {
-            match (opcode, operand) {
-                (Opcode::Adv, _) => a = a / 2_usize.pow(operand.get_value(a, b, c) as u32),
-                (Opcode::Bxl, Operand::Literal(n)) => b ^= *n as usize,
-                (Opcode::Bst, _) => b = operand.get_value(a, b, c) % 8,
-                (Opcode::Jnz, Operand::Literal(n)) => {
-                    if a != 0 {
-                        pointer = *n as usize / 2;
-                        continue;
-                    }
-                }
-                (Opcode::Bxc, _) => b ^= c,
-                (Opcode::Out, _) => output.push((operand.get_value(a, b, c) % 8) as u8),
-                (Opcode::Bdv, _) => b = a / 2_usize.pow(operand.get_value(a, b, c) as u32),
-                (Opcode::Cdv, _) => c = a / 2_usize.pow(operand.get_value(a, b, c) as u32),
-                _ => return Err(anyhow!("invalid operation")),
-            }
-
-            pointer += 1;
+    fn compute(&self, a: usize) -> Computation<'_> {
+        Computation {
+            operations: &self.operations,
+            pointer: 0,
+            a,
+            b: 0,
+            c: 0,
         }
-
-        Ok(output)
     }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
-        let (registers, program) = input
-            .split_once("\n\n")
-            .ok_or(anyhow!("failed to split input"))?;
+        let mut parser = NumberParser::<usize>::from(input);
 
-        let a = registers
-            .split([' ', '\n'])
-            .nth(2)
-            .ok_or(anyhow!("failed to parse registers"))?
-            .parse::<usize>()?;
+        let (a, _, _) = parser
+            .next_tuple()
+            .ok_or(anyhow!("failed to parse registers"))?;
 
-        let program = program
-            .split_once(' ')
-            .ok_or(anyhow!("failed to split program"))?
-            .1
-            .bytes()
-            .step_by(2)
-            .map(|b| b - b'0')
-            .collect::<Vec<_>>();
+        let program = parser.map(|n| n as u8).collect::<Vec<_>>();
 
         let operations = program
             .iter()
-            .cloned()
             .tuples::<(_, _)>()
             .map(Operation::try_from)
             .collect::<Anyhow<Vec<_>>>()?;
@@ -166,24 +179,29 @@ impl Solver for Solution {
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
-        Ok(self
-            .compute(self.a)?
-            .into_iter()
-            .map(|b| char::from(b + b'0'))
-            .join(","))
+        Ok(self.compute(self.a).map(|b| char::from(b + b'0')).join(","))
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let mut queue = vec![(self.program.len() - 1, 0)];
+        let mut queue = Vec::with_capacity(32);
+        queue.push((self.program.len() - 1, 0));
 
+        // The program is an octal computer which mutates the last few bits and shifts register A on each scan. Quining
+        // can be done one oct at a time, starting from the last output, by finding an offset to the current value of
+        // register A to generate the correct output, then multiplying register A by 8 to move on to the next output.
+        // Repeat until all outputs are matched for the given value of register A, using BFS to find the lowest value.
         while let Some((offset, a)) = queue.pop() {
-            for i in 0..8 {
-                if self.compute(a * 8 + i)?[..] == self.program[offset..] {
+            for candidate in a..a + 8 {
+                if self
+                    .compute(candidate)
+                    .zip(self.program.iter().skip(offset))
+                    .all(|(a, &b)| a == b)
+                {
                     if offset == 0 {
-                        return Ok(a * 8 + i);
+                        return Ok(candidate);
                     }
 
-                    queue.insert(0, (offset - 1, a * 8 + i));
+                    queue.insert(0, (offset - 1, candidate * 8));
                 }
             }
         }
