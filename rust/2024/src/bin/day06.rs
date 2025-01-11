@@ -1,6 +1,4 @@
-use std::iter::Peekable;
-
-#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Hash)]
+#[derive(Clone, Copy, PartialEq)]
 struct Point {
     x: u8,
     y: u8,
@@ -12,11 +10,11 @@ impl Point {
     }
 }
 
-#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd, Hash)]
+#[derive(Clone, Copy, PartialEq)]
 enum Direction {
     N,
-    S,
     E,
+    S,
     W,
 }
 
@@ -29,28 +27,96 @@ impl Direction {
             Self::W => Self::N,
         }
     }
+
+    fn move_point(&self, p: &Point, size: u8) -> Option<Point> {
+        match self {
+            Self::N if p.y > 0 => Some(Point::new(p.x, p.y - 1)),
+            Self::E if p.x < size - 1 => Some(Point::new(p.x + 1, p.y)),
+            Self::S if p.y < size - 1 => Some(Point::new(p.x, p.y + 1)),
+            Self::W if p.x > 0 => Some(Point::new(p.x - 1, p.y)),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
 struct Map {
-    obstacles: FxHashSet<Point>,
-    start: Point,
+    data: Vec<[u64; 3]>,
     size: u8,
 }
 
-impl TryFrom<&str> for Map {
-    type Error = Error;
+impl Map {
+    fn new(size: u8) -> Self {
+        Self {
+            data: vec![[0; 3]; size as usize],
+            size,
+        }
+    }
 
-    fn try_from(input: &str) -> Result<Self, Self::Error> {
-        let mut obstacles = FxHashSet::default();
+    fn contains(&self, point: &Point) -> bool {
+        let i = point.x % 64;
+        (self.data[point.y as usize][(point.x - i) as usize / 64] >> i) & 1 > 0
+    }
+
+    fn insert(&mut self, point: Point) {
+        let i = point.x % 64;
+        self.data[point.y as usize][(point.x - i) as usize / 64] |= 1 << i;
+    }
+}
+
+struct MapIterator<'a> {
+    map: &'a Map,
+    direction: Direction,
+    position: Option<Point>,
+}
+
+impl Iterator for MapIterator<'_> {
+    type Item = (Point, Direction);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let p = self.position?;
+
+        if let Some(next) = self.direction.move_point(&p, self.map.size) {
+            if self.map.contains(&next) {
+                self.direction = self.direction.turn();
+            } else {
+                self.position = Some(next);
+            }
+        } else {
+            self.position = None;
+        }
+
+        Some((p, self.direction))
+    }
+}
+
+#[derive(Clone)]
+struct Solution {
+    map: Map,
+    start: Point,
+}
+
+impl Solution {
+    fn iter(&self) -> MapIterator<'_> {
+        MapIterator {
+            map: &self.map,
+            direction: Direction::N,
+            position: Some(self.start),
+        }
+    }
+}
+
+impl Solver for Solution {
+    fn new(input: &str) -> Anyhow<Self> {
+        let mut map = Map::new(input.lines().count() as u8);
         let mut start = None;
-        let mut x = 0;
-        let mut y = 0;
+        let mut x = 0_u8;
+        let mut y = 0_u8;
 
         for b in input.bytes() {
             match b {
                 b'#' => {
-                    obstacles.insert(Point::new(x, y));
+                    map.insert(Point::new(x, y));
                     x += 1;
                 }
                 b'^' => {
@@ -65,117 +131,63 @@ impl TryFrom<&str> for Map {
             }
         }
 
-        Ok(Self {
-            obstacles,
-            start: start.ok_or(anyhow!("failed to find start"))?,
-            size: input.lines().count() as u8,
-        })
-    }
-}
-
-type Index = Box<dyn Iterator<Item = (Point, Direction)>>;
-
-impl Map {
-    fn iter(&self) -> MapIterator {
-        MapIterator::from(self)
-    }
-
-    fn index(&self, s: Point, dir: Direction) -> Index {
-        match dir {
-            Direction::N => Box::new((0..s.y + 1).rev().map(move |y| (Point::new(s.x, y), dir))),
-            Direction::E => Box::new((s.x..self.size).map(move |x| (Point::new(x, s.y), dir))),
-            Direction::S => Box::new((s.y..self.size).map(move |y| (Point::new(s.x, y), dir))),
-            Direction::W => Box::new((0..s.x + 1).rev().map(move |x| (Point::new(x, s.y), dir))),
-        }
-    }
-}
-
-struct MapIterator<'a> {
-    map: &'a Map,
-    index: Peekable<Index>,
-}
-
-impl<'a> From<&'a Map> for MapIterator<'a> {
-    fn from(map: &'a Map) -> Self {
-        Self {
-            map,
-            index: map.index(map.start, Direction::N).peekable(),
-        }
-    }
-}
-
-impl Iterator for MapIterator<'_> {
-    type Item = (Point, Direction);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some((point, direction)) = self.index.next() {
-            if let Some((peeked, _)) = self.index.peek() {
-                if self.map.obstacles.contains(peeked) {
-                    let turned = direction.turn();
-                    self.index = self.map.index(point, turned).peekable();
-                    Some((point, turned))
-                } else {
-                    Some((point, direction))
-                }
-            } else {
-                Some((point, direction))
-            }
-        } else {
-            None
-        }
-    }
-}
-
-struct Solution {
-    map: Map,
-}
-
-impl Solver for Solution {
-    fn new(input: &str) -> Anyhow<Self> {
-        Ok(Self {
-            map: Map::try_from(input)?,
-        })
+        let start = start.ok_or(anyhow!("failed to find start"))?;
+        Ok(Self { map, start })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
+        let mut seen = Map::new(self.map.size);
+
         Ok(self
-            .map
             .iter()
-            .map(|(point, _)| point)
-            .collect::<FxHashSet<Point>>()
-            .len())
+            .filter(|(point, _)| {
+                if seen.contains(point) {
+                    false
+                } else {
+                    seen.insert(*point);
+                    true
+                }
+            })
+            .count())
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        let points = self
-            .map
+        let mut seen = Map::new(self.map.size);
+
+        let candidates = self
             .iter()
             .skip(1)
-            .map(|(point, _)| point)
-            .collect::<FxHashSet<Point>>();
+            .filter_map(|(point, _)| {
+                if seen.contains(&point) {
+                    None
+                } else {
+                    seen.insert(point);
+                    Some(point)
+                }
+            })
+            .collect::<Vec<_>>();
 
-        Ok(points
+        Ok(candidates
             .par_iter()
-            .fold(
-                || 0,
-                |acc, &point| {
-                    let mut new_map = self.map.clone();
-                    new_map.obstacles.insert(point);
+            .filter(|&&point| {
+                let mut new = self.clone();
+                new.map.insert(point);
 
-                    if new_map
-                        .iter()
-                        .chunk_by(|(_, d)| *d)
-                        .into_iter()
-                        .map(|(_, p)| p.last().expect("failed to chunk path"))
-                        .all_unique()
-                    {
-                        acc
-                    } else {
-                        acc + 1
+                let mut seen: [_; 4] = std::array::from_fn(|_| Map::new(self.map.size));
+
+                for ((ap, ad), (_, bd)) in new.iter().tuple_windows() {
+                    if ad != bd {
+                        if seen[ad as usize].contains(&ap) {
+                            return true;
+                        } else {
+                            seen[ad as usize].insert(ap);
+                        }
                     }
-                },
-            )
-            .sum::<usize>())
+                }
+
+                false
+            })
+            .count())
     }
 }
 
