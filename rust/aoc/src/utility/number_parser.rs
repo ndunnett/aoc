@@ -2,14 +2,16 @@ use std::ops::{Add, Neg, Shl};
 
 /// Parses all numbers in a string to an arbitrary type, ignoring sign.
 pub struct NumberParser<'a, T> {
-    bytes: std::iter::Peekable<std::str::Bytes<'a>>,
+    bytes: &'a [u8],
+    index: usize,
     marker: std::marker::PhantomData<T>,
 }
 
 impl<'a, T> From<&'a str> for NumberParser<'a, T> {
     fn from(s: &'a str) -> Self {
         Self {
-            bytes: s.bytes().peekable(),
+            bytes: s.as_bytes(),
+            index: 0,
             marker: std::marker::PhantomData,
         }
     }
@@ -17,24 +19,25 @@ impl<'a, T> From<&'a str> for NumberParser<'a, T> {
 
 impl<T> Iterator for NumberParser<'_, T>
 where
-    T: From<u8> + Clone + Copy + Shl + Add,
-    <T as Shl>::Output: Add,
-    <<T as Shl>::Output as Add>::Output: Add<T>,
-    T: From<<<<T as Shl>::Output as Add>::Output as Add<T>>::Output>,
+    T: From<u8> + Clone + Copy + Shl<usize, Output = T> + Add<T, Output = T>,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(b) = self.bytes.next() {
-            if b.is_ascii_digit() {
-                let mut num = T::from(b - b'0');
+        while self.index < self.bytes.len() {
+            if self.bytes[self.index].is_ascii_digit() {
+                let mut num = T::from(self.bytes[self.index] - b'0');
+                self.index += 1;
 
-                while let Some(b) = self.bytes.next_if(|b| b.is_ascii_digit()) {
-                    num = T::from((num << T::from(1)) + (num << T::from(3)) + T::from(b - b'0'));
+                while self.index < self.bytes.len() && self.bytes[self.index].is_ascii_digit() {
+                    num = (num << 1) + (num << 3) + T::from(self.bytes[self.index] - b'0');
+                    self.index += 1;
                 }
 
                 return Some(num);
             }
+
+            self.index += 1;
         }
 
         None
@@ -43,14 +46,16 @@ where
 
 /// Parses all numbers in a string to an arbitrary type, including sign.
 pub struct NumberParserSigned<'a, T> {
-    bytes: std::iter::Peekable<std::str::Bytes<'a>>,
+    bytes: &'a [u8],
+    index: usize,
     marker: std::marker::PhantomData<T>,
 }
 
 impl<'a, T> From<&'a str> for NumberParserSigned<'a, T> {
     fn from(s: &'a str) -> Self {
         Self {
-            bytes: s.bytes().peekable(),
+            bytes: s.as_bytes(),
+            index: 0,
             marker: std::marker::PhantomData,
         }
     }
@@ -58,35 +63,26 @@ impl<'a, T> From<&'a str> for NumberParserSigned<'a, T> {
 
 impl<T> Iterator for NumberParserSigned<'_, T>
 where
-    T: From<u8> + Clone + Copy + Shl + Add + Neg<Output = T>,
-    <T as Shl>::Output: Add,
-    <<T as Shl>::Output as Add>::Output: Add<T>,
-    T: From<<<<T as Shl>::Output as Add>::Output as Add<T>>::Output>,
+    T: From<u8> + Clone + Copy + Shl<usize, Output = T> + Add<T, Output = T> + Neg<Output = T>,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(mut b) = self.bytes.next() {
-            let mut negative = false;
+        while self.index < self.bytes.len() {
+            if self.bytes[self.index].is_ascii_digit() {
+                let is_negative = self.index > 0 && self.bytes[self.index - 1] == b'-';
+                let mut num = T::from(self.bytes[self.index] - b'0');
+                self.index += 1;
 
-            if b == b'-' {
-                negative = true;
-                b = self.bytes.next()?;
-            }
-
-            if b.is_ascii_digit() {
-                let mut num = T::from(b - b'0');
-
-                while let Some(b) = self.bytes.next_if(|b| b.is_ascii_digit()) {
-                    num = T::from((num << T::from(1)) + (num << T::from(3)) + T::from(b - b'0'));
+                while self.index < self.bytes.len() && self.bytes[self.index].is_ascii_digit() {
+                    num = (num << 1) + (num << 3) + T::from(self.bytes[self.index] - b'0');
+                    self.index += 1;
                 }
 
-                if negative {
-                    return Some(-num);
-                } else {
-                    return Some(num);
-                }
+                return Some(if is_negative { -num } else { num });
             }
+
+            self.index += 1;
         }
 
         None
