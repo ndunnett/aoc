@@ -2,6 +2,7 @@
   "dockerComposeFile": "./docker-compose.yml",
   "service": "aoc_python",
   "workspaceFolder": "/ws/python",
+  "postCreateCommand": "uv venv \"$AOC_REPO/python/.venv\"; uv pip install -r \"$AOC_REPO/python/.devcontainer/requirements.txt\"",
   "customizations": {
     "vscode": {
       "extensions": [

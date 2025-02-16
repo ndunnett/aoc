@@ -39,14 +39,8 @@ RUN set -x; \
 USER "$AOC_USERNAME"
 
 # install uv
-COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.6 /uv /uvx /bin/
 ENV UV_LINK_MODE=copy
-
-# create virtual environment
-COPY --chown="$AOC_USERNAME:$AOC_USERNAME" requirements.txt "$AOC_REPO/requirements.txt"
-RUN set -eux; \
-    uv venv .venv; \
-    uv pip install -r requirements.txt
 
 # replace entrypoint
 CMD sleep infinity
