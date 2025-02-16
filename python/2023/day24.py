@@ -1,5 +1,5 @@
 from __future__ import annotations
-from lib import Point
+from lib import Point3D as Point
 from itertools import combinations, product
 from dataclasses import dataclass
 import z3

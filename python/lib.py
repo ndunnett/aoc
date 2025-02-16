@@ -110,8 +110,46 @@ def chunk_by[T, U](predicate: Callable[[T], U], iterable: Iterable[T]) -> Chunke
     return ChunkedBy(predicate, iterable)
 
 
-class Point(tuple[N, ...]):
-    """Subclass of tuple to support 2 or 3 dimensional points."""
+class Point(tuple[N, N]):
+    """Subclass of tuple to support 2 dimensional points."""
+
+    __slots__ = ()
+
+    def __new__(cls, *args: N) -> Self:
+        return tuple.__new__(cls, args)
+
+    @property
+    def x(self) -> N:
+        return self[0]
+
+    @property
+    def y(self) -> N:
+        return self[1]
+
+    def __add__(self, r: Point) -> Point:  # type: ignore
+        return Point(self.x + r.x, self.y + r.y)
+
+    def __sub__(self, r: Point) -> Point:
+        return Point(self.x - r.x, self.y - r.y)
+
+    def __mul__(self, n: N) -> Point:  # type: ignore
+        return Point(self.x * n, self.y * n)
+
+    def __lt__(self, r: Point) -> bool:  # type: ignore
+        return self.x < r.x and self.y < r.y
+
+    def __le__(self, r: Point) -> bool:  # type: ignore
+        return self.x <= r.x and self.y <= r.y
+
+    def __gt__(self, r: Point) -> bool:  # type: ignore
+        return self.x > r.x and self.y > r.y
+
+    def __ge__(self, r: Point) -> bool:  # type: ignore
+        return self.x >= r.x and self.y >= r.y
+
+
+class Point3D(tuple[N, N, N]):
+    """Subclass of tuple to support 3 dimensional points."""
 
     __slots__ = ()
 
@@ -130,44 +168,23 @@ class Point(tuple[N, ...]):
     def z(self) -> N:
         return self[2]
 
-    def __add__(self, r: Point) -> Point:  # type: ignore
-        if len(self) == 2:
-            return Point(self.x + r.x, self.y + r.y)
-        else:
-            return Point(self.x + r.x, self.y + r.y, self.z + r.z)
+    def __add__(self, r: Point3D) -> Point3D:  # type: ignore
+        return Point3D(self.x + r.x, self.y + r.y, self.z + r.z)
 
-    def __sub__(self, r: Point) -> Point:
-        if len(self) == 2:
-            return Point(self.x - r.x, self.y - r.y)
-        else:
-            return Point(self.x - r.x, self.y - r.y, self.z - r.z)
+    def __sub__(self, r: Point3D) -> Point3D:
+        return Point3D(self.x - r.x, self.y - r.y, self.z - r.z)
 
-    def __mul__(self, n: N) -> Point:  # type: ignore
-        if len(self) == 2:
-            return Point(self.x * n, self.y * n)
-        else:
-            return Point(self.x * n, self.y * n, self.z * n)
+    def __mul__(self, n: N) -> Point3D:  # type: ignore
+        return Point3D(self.x * n, self.y * n, self.z * n)
 
-    def __lt__(self, r: Point) -> bool:  # type: ignore
-        if len(self) == 2:
-            return self.x < r.x and self.y < r.y
-        else:
-            return self.x < r.x and self.y < r.y and self.z < r.z
+    def __lt__(self, r: Point3D) -> bool:  # type: ignore
+        return self.x < r.x and self.y < r.y and self.z < r.z
 
-    def __le__(self, r: Point) -> bool:  # type: ignore
-        if len(self) == 2:
-            return self.x <= r.x and self.y <= r.y
-        else:
-            return self.x <= r.x and self.y <= r.y and self.z <= r.z
+    def __le__(self, r: Point3D) -> bool:  # type: ignore
+        return self.x <= r.x and self.y <= r.y and self.z <= r.z
 
-    def __gt__(self, r: Point) -> bool:  # type: ignore
-        if len(self) == 2:
-            return self.x > r.x and self.y > r.y
-        else:
-            return self.x > r.x and self.y > r.y and self.z > r.z
+    def __gt__(self, r: Point3D) -> bool:  # type: ignore
+        return self.x > r.x and self.y > r.y and self.z > r.z
 
-    def __ge__(self, r: Point) -> bool:  # type: ignore
-        if len(self) == 2:
-            return self.x >= r.x and self.y >= r.y
-        else:
-            return self.x >= r.x and self.y >= r.y and self.z >= r.z
+    def __ge__(self, r: Point3D) -> bool:  # type: ignore
+        return self.x >= r.x and self.y >= r.y and self.z >= r.z
