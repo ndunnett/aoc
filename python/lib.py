@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from itertools import chain
 from typing import TYPE_CHECKING, Callable, Protocol, Self, TypeVar
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable, Sequence
+    from collections.abc import Generator, Iterable, Iterator, Sequence
 
 
 T = TypeVar("T", infer_variance=True)
@@ -57,57 +56,78 @@ def is_floatable(s: str) -> bool:
         return False
 
 
-class Peekable[T]:
+class peekable[T]:  # noqa: N801
+    it: Iterator[T]
+    next_value: T
+    next_valid: bool
+    end: bool
+
     def __init__(self, iterable: Iterable[T]) -> None:
         self.it = iter(iterable)
+
+        try:
+            self.next_value = next(self.it)
+            self.next_valid = True
+            self.end = False
+        except StopIteration:
+            self.next_valid = False
+            self.end = True
 
     def __iter__(self) -> Self:
         return self
 
     def __next__(self) -> T:
-        return next(self.it)
+        if self.end:
+            raise StopIteration
+
+        if self.next_valid:
+            self.next_valid = False
+            return self.next_value
+        else:
+            try:
+                return next(self.it)
+            except StopIteration as e:
+                self.end = True
+                raise e
 
     def __peek__(self) -> T | None:
-        it = self.it
-        try:
-            peek = next(self.it)
-            self.it = chain((peek,), it)
-            return peek
-        except StopIteration:
+        if not self.next_valid and not self.end:
+            try:
+                self.next_value = next(self.it)
+                self.next_valid = True
+            except StopIteration:
+                self.end = True
+
+        if self.end:
             return None
+        else:
+            return self.next_value
 
 
-def peekable(iterable: Iterable[T]) -> Peekable[T]:
-    return Peekable(iterable)
-
-
-def peek(peekable: Peekable[T]) -> T | None:
+def peek(peekable: peekable[T]) -> T | None:
     return peekable.__peek__()
 
 
-class ChunkedBy[T, U]:
+class chunk_by[T, U]:  # noqa: N801
+    it: peekable[T]
+    predicate: Callable[[T], U]
+
     def __init__(self, predicate: Callable[[T], U], iterable: Iterable[T]) -> None:
-        self.it = peekable(iter(iterable))
+        self.it = peekable(iterable)
         self.predicate = predicate
 
     def __iter__(self) -> Self:
         return self
 
     def __next__(self) -> tuple[U, list[T]]:
-        chunk = [next(self.it)]
-        cat = self.predicate(chunk[0])
+        first = next(self.it)
+        category = self.predicate(first)
+        chunk = [first]
 
-        while peeked := peek(self.it):
-            if self.predicate(peeked) == cat:
-                chunk.append(next(self.it))
-            else:
-                break
+        while (peeked := peek(self.it)) and self.predicate(peeked) == category:
+            chunk.append(next(self.it))
 
-        return (cat, chunk)
-
-
-def chunk_by[T, U](predicate: Callable[[T], U], iterable: Iterable[T]) -> ChunkedBy[T, U]:
-    return ChunkedBy(predicate, iterable)
+        return (category, chunk)
 
 
 class Point(tuple[N, N]):
