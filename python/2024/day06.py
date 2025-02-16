@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-from enum import Enum, auto
-from typing import TYPE_CHECKING
+from enum import Enum
+from itertools import pairwise
 
-from lib import Point, chunk_by, peek, peekable
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
+from lib import Point
 
 
 class Direction(Enum):
-    N = auto()
-    E = auto()
-    S = auto()
-    W = auto()
+    N = 0
+    E = 1
+    S = 2
+    W = 3
 
     def turn(self) -> Direction:
         match self:
@@ -26,8 +23,25 @@ class Direction(Enum):
             case Direction.W:
                 return Direction.N
 
+    def move_point(self, p: Point, size: int) -> Point | None:
+        match self:
+            case Direction.N if p.y > 0:
+                return Point(p.x, p.y - 1)
+            case Direction.E if p.x < size - 1:
+                return Point(p.x + 1, p.y)
+            case Direction.S if p.y < size - 1:
+                return Point(p.x, p.y + 1)
+            case Direction.W if p.x > 0:
+                return Point(p.x - 1, p.y)
+            case _:
+                return None
+
 
 class Map:
+    obstacles: set[Point]
+    size: int
+    start: Point
+
     def __init__(self, input: str) -> None:
         self.obstacles = set()
 
@@ -43,71 +57,61 @@ class Map:
 
         self.size = len(input.splitlines())
 
-    def get_index(self, s: Point[int], dir: Direction) -> Generator[tuple[Point[int], Direction]]:
-        match dir:
-            case Direction.N:
-                return ((Point(s.x, y), dir) for y in range(s.y, -1, -1))
-            case Direction.E:
-                return ((Point(x, s.y), dir) for x in range(s.x, self.size))
-            case Direction.S:
-                return ((Point(s.x, y), dir) for y in range(s.y, self.size))
-            case Direction.W:
-                return ((Point(x, s.y), dir) for x in range(s.x, -1, -1))
-
     def __iter__(self) -> MapIter:
         return MapIter(self)
 
 
 class MapIter:
+    map_: Map
+    direction: Direction
+    position: Point | None
+
     def __init__(self, map_: Map) -> None:
         self.map_ = map_
-        self.index = peekable(self.map_.get_index(self.map_.start, Direction.N))
+        self.direction = Direction.N
+        self.position = map_.start
 
     def __iter__(self) -> MapIter:
-        return iter(self.map_)
+        return self
 
-    def __next__(self) -> tuple[Point[int], Direction]:
-        if next_ := next(self.index):
-            (point, direction) = next_
-
-            if peeked := peek(self.index):
-                (peeked, _) = peeked
-
-                if peeked in self.map_.obstacles:
-                    turned = direction.turn()
-                    self.index = peekable(self.map_.get_index(point, turned))
-                    return (point, turned)
+    def __next__(self) -> tuple[Point, Direction]:
+        if p := self.position:
+            if next_ := self.direction.move_point(p, self.map_.size):
+                if next_ in self.map_.obstacles:
+                    self.direction = self.direction.turn()
                 else:
-                    return (point, direction)
+                    self.position = next_
             else:
-                return (point, direction)
+                self.position = None
 
-        raise StopIteration
+            return (p, self.direction)
+        else:
+            raise StopIteration
 
 
 def part1(input: str) -> int:
-    return len({point for point, _ in Map(input)})
+    return len({p for p, _ in Map(input)})
 
 
 def part2(input: str) -> int:
-    map_ = Map(input)
-    points = {point for point, _ in map_ if point != map_.start}
-    result = -1
+    m = Map(input)
+    count = 0
 
-    for point in points:
-        map_.obstacles.add(point)
-        path = set()
+    for point in {p for p, _ in m}:
+        m.obstacles.add(point)
+        seen = (set(), set(), set(), set())
 
-        for _, chunk in chunk_by(lambda tup: tup[1], map_):
-            if chunk[-1] in path:
-                result += 1
-                break
+        for (ap, ad), (_, bd) in pairwise(m):
+            if ad != bd:
+                if ap in seen[ad.value]:
+                    count += 1
+                    break
 
-            path.add(chunk[-1])
+                seen[ad.value].add(ap)
 
-        map_.obstacles.remove(point)
+        m.obstacles.remove(point)
 
-    return result
+    return count
 
 
 TEST_INPUT = """....#.....
