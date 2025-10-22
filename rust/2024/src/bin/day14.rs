@@ -66,37 +66,35 @@ impl Solver for Solution {
     }
 
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
-        // divide the room to get the middle thirds
-        let ha = self.height / 3;
-        let hb = self.height - ha;
-        let wa = self.width / 3;
-        let wb = self.width - wa;
+        let steps = (self.width * self.height) as i32;
+        let p = self.robots.len() as f64 / (self.width * self.height) as f64;
+        let avg_variance = (1.0 - p) / (p * p);
 
-        // approximate entropy in the middle of the room after 100 seconds until it reaches a predetermined threshold
-        // the density of the robots should be much higher when forming a pattern than when randomly distributed
-        //
-        // expected robot count in the middle when randomly distributed:
-        //   e = mid_positions * p
-        //   => mid_positions = width // 3 * height // 3 = 101 // 3 * 103 // 3 = 1122
-        //   => p = robot_count / (width * height) = 500 / (101 * 103) = 0.048
-        //   => e = 1122 * 0.048 = 53.856
-        //
-        // so when the robot count in the middle is significantly higher than 53.856, it signifies that there must be a pattern
-        (100..(self.width as i32 * self.height as i32))
+        let count = 2 * self.robots.len() as u32;
+        let variance_count_threshold = (0.75 * 2.0_f64.sqrt() * avg_variance) as u32 * count;
+
+        (100..steps)
             .into_par_iter()
-            .find_any(|t| {
-                self.robots
-                    .iter()
-                    .filter(|r| {
-                        let (x, y) = (
-                            (r.p.x as i32 + r.v.x as i32 * t).rem_euclid(self.width as i32) as i16,
-                            (r.p.y as i32 + r.v.y as i32 * t).rem_euclid(self.height as i32) as i16,
-                        );
+            .find_any(|step| {
+                let (mut sum, mut sum_sq) = (0, 0);
 
-                        x > wa && x < wb && y > ha && y < hb
-                    })
-                    .count()
-                    >= 150
+                for robot in &self.robots {
+                    let x = (robot.p.x as i32 + robot.v.x as i32 * step)
+                        .rem_euclid(self.width as i32) as u32;
+                    let y = (robot.p.y as i32 + robot.v.y as i32 * step)
+                        .rem_euclid(self.height as i32) as u32;
+                    sum += x + y;
+                    sum_sq += x * x + y * y;
+                }
+
+                // count is factored into variance to reduce mathematical operations required:
+                //   mean = sum / count
+                //   variance = sum_sq / count - mean^2
+                //   variance = sum_sq / count - sum^2 / count^2
+                //   variance * count = sum_sq - sum^2 / count
+
+                let variance_count = sum_sq - sum * sum / count;
+                variance_count < variance_count_threshold
             })
             .ok_or(anyhow!("failed to solve part 2"))
     }
