@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 
-use aoc_core::{delete_cached_input, load_input, AOC_URL};
+use aoc_core::{AOC_URL, delete_cached_input, load_input};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
