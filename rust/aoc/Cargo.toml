@@ -6,9 +6,9 @@ edition = "2021"
 [dependencies]
 aoc_core = { workspace = true }
 anyhow = { workspace = true }
-colored = "2.1.0"
-itertools = "0.13.0"
+colored = "3.0.0"
+itertools = "0.14.0"
 paste = "1.0.15"
-rayon = "1.10.0"
-regex = "1.11.1"
-rustc-hash = "2.1.0"
+rayon = "1.11.0"
+regex = "1.12.2"
+rustc-hash = "2.1.1"
