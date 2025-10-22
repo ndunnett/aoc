@@ -16,7 +16,7 @@ fn blink(value: u64, blinks: u64, cache: &mut Cache) -> u64 {
     } else {
         let n = value.ilog10() + 1;
 
-        if n % 2 == 0 {
+        if n.is_multiple_of(2) {
             let m = 10_u64.pow(n / 2);
             blink(value % m, blinks - 1, cache) + blink(value / m, blinks - 1, cache)
         } else {

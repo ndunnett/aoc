@@ -93,10 +93,10 @@ impl Solution {
             Direction::ALL
                 .iter()
                 .filter_map(|d| {
-                    if let Some(p) = d.next_move(point, self.finish.x) {
-                        if !map.contains(&p) {
-                            return Some((p, steps + 1));
-                        }
+                    if let Some(p) = d.next_move(point, self.finish.x)
+                        && !map.contains(&p)
+                    {
+                        return Some((p, steps + 1));
                     }
 
                     None

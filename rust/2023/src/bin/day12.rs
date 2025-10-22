@@ -11,25 +11,25 @@ fn permutations(conditions: &[Condition], groups: &[u8], cache: &mut Cache) -> u
 
     let mut perms = 0;
 
-    if let Some(&group) = groups.first() {
-        if conditions.len() >= group as usize {
-            let can_match_group = conditions[..group as usize]
-                .iter()
-                .all(|&c| c == Condition::Damaged || c == Condition::Unknown);
+    if let Some(&group) = groups.first()
+        && conditions.len() >= group as usize
+    {
+        let can_match_group = conditions[..group as usize]
+            .iter()
+            .all(|&c| c == Condition::Damaged || c == Condition::Unknown);
 
-            match (can_match_group, conditions.get(group as usize)) {
-                (true, Some(&Condition::Unknown)) => {
-                    perms += permutations(
-                        &[&[Condition::Operational], &conditions[group as usize + 1..]].concat(),
-                        &groups[1..],
-                        cache,
-                    );
-                }
-                (true, Some(&Condition::Operational) | None) => {
-                    perms += permutations(&conditions[group as usize..], &groups[1..], cache);
-                }
-                _ => {}
+        match (can_match_group, conditions.get(group as usize)) {
+            (true, Some(&Condition::Unknown)) => {
+                perms += permutations(
+                    &[&[Condition::Operational], &conditions[group as usize + 1..]].concat(),
+                    &groups[1..],
+                    cache,
+                );
             }
+            (true, Some(&Condition::Operational) | None) => {
+                perms += permutations(&conditions[group as usize..], &groups[1..], cache);
+            }
+            _ => {}
         }
     }
 

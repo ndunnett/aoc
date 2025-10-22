@@ -101,10 +101,10 @@ impl Solution {
         let mut cache = FxHashMap::default();
 
         for i in 0..n {
-            if let Some(j) = cache.get(&self.round) {
-                if (n - i) % (i - j) == 0 {
-                    return;
-                }
+            if let Some(j) = cache.get(&self.round)
+                && (n - i).is_multiple_of(i - j)
+            {
+                return;
             }
 
             cache.insert(self.round.clone(), i);

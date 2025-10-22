@@ -16,7 +16,7 @@ fn parse_as_list(line: &str) -> Anyhow<Vec<f64>> {
 fn parse_as_number(line: &str) -> Anyhow<f64> {
     Ok(line
         .split(':')
-        .last()
+        .next_back()
         .ok_or(anyhow!("failed to extract numbers from line"))?
         .replace(' ', "")
         .parse()?)
