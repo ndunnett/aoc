@@ -6,7 +6,7 @@ resolver = "2"
 [workspace.dependencies]
 aoc_core = { path = "aoc_core" }
 aoc = { path = "aoc" }
-anyhow = "1.0.93"
+anyhow = "1.0.100"
 
 [profile.dev]
 lto = "off"
