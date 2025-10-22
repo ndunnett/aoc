@@ -89,8 +89,8 @@ fn download_file(url: &str) -> anyhow::Result<String> {
     throttle_requests()?;
 
     let response = ureq::get(url)
-        .set("Cookie", get_session())
-        .set("User-Agent", USER_AGENT)
+        .header("Cookie", get_session())
+        .header("User-Agent", USER_AGENT)
         .call()?;
 
     if response.status() != 200 {
@@ -99,7 +99,7 @@ fn download_file(url: &str) -> anyhow::Result<String> {
             response.status()
         ))
     } else {
-        Ok(response.into_string()?)
+        Ok(response.into_body().read_to_string()?)
     }
 }
 
