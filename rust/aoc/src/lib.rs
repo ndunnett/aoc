@@ -7,7 +7,7 @@ pub use std::{
 pub type ParseIntResult<T> = Result<T, std::num::ParseIntError>;
 pub type ParseFloatResult<T> = Result<T, std::num::ParseFloatError>;
 
-pub use anyhow::{anyhow, Error};
+pub use anyhow::{Error, anyhow};
 pub use colored::Colorize;
 pub use itertools::{self, Itertools};
 pub use rayon::prelude::*;
@@ -30,7 +30,7 @@ where
 
 pub mod __runner {
     pub use aoc_core::auto_input;
-    pub use paste::paste;
+    pub use pastey::paste;
 
     pub fn format_time(time: std::time::Duration) -> super::Anyhow<String> {
         let s = format!("{time:#?}");
