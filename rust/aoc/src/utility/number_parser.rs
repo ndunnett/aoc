@@ -17,6 +17,16 @@ impl<'a, T> From<&'a str> for NumberParser<'a, T> {
     }
 }
 
+impl<'a, T> From<&'a [u8]> for NumberParser<'a, T> {
+    fn from(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            index: 0,
+            marker: std::marker::PhantomData,
+        }
+    }
+}
+
 impl<T> Iterator for NumberParser<'_, T>
 where
     T: From<u8> + Clone + Copy + Shl<usize, Output = T> + Add<T, Output = T>,
@@ -55,6 +65,16 @@ impl<'a, T> From<&'a str> for NumberParserSigned<'a, T> {
     fn from(s: &'a str) -> Self {
         Self {
             bytes: s.as_bytes(),
+            index: 0,
+            marker: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'a, T> From<&'a [u8]> for NumberParserSigned<'a, T> {
+    fn from(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
             index: 0,
             marker: std::marker::PhantomData,
         }

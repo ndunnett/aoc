@@ -1,3 +1,6 @@
+#![feature(generic_const_exprs)]
+#![allow(incomplete_features)]
+
 pub use std::{
     collections::{HashMap, HashSet},
     fmt,
@@ -17,7 +20,7 @@ pub use rustc_hash::{FxBuildHasher, FxHashMap, FxHashSet, FxHasher};
 pub type Anyhow<T> = anyhow::Result<T>;
 
 pub mod utility;
-pub use crate::utility::{NumberParser, NumberParserSigned};
+pub use crate::utility::{ArrayVec, KeyMap, NumberParser, NumberParserSigned};
 
 pub trait Solver
 where
@@ -89,7 +92,7 @@ pub mod __runner {
 ///
 /// Utility library imports:
 /// ```
-/// pub use crate::utility::{NumberParser, NumberParserSigned};
+/// pub use crate::utility::{ArrayVec, KeyMap, NumberParser, NumberParserSigned};
 /// ```
 #[macro_export]
 macro_rules! solution {
