@@ -1,57 +1,82 @@
-use std::mem::MaybeUninit;
+use std::{mem::MaybeUninit, ops::Index};
 
 /// Work in progress minimal implementation of a high performance vector. Very unsafe, no bounds checks.
 #[derive(Clone, Copy)]
-pub struct ArrayVec<T: Copy, const N: usize> {
-    data: [MaybeUninit<T>; N],
-    len: u8,
+pub struct ArrayVec<T: Copy, const CAPACITY: usize, LenType: Copy> {
+    data: [MaybeUninit<T>; CAPACITY],
+    len: LenType,
 }
 
-impl<T: Copy, const N: usize> ArrayVec<T, N> {
-    #[inline(always)]
-    pub const fn new() -> Self {
-        Self {
-            data: [const { MaybeUninit::uninit() }; N],
-            len: 0,
+macro_rules! arrayvec_impl {
+    ($($t:ty),+) => { $(
+        impl<T: Copy, const CAPACITY: usize> ArrayVec<T, CAPACITY, $t> {
+            #[inline(always)]
+            pub const fn new() -> Self {
+                Self {
+                    data: [MaybeUninit::uninit(); CAPACITY],
+                    len: 0,
+                }
+            }
+
+            #[inline(always)]
+            pub fn as_slice(&self) -> &[T] {
+                unsafe { std::mem::transmute(self.data.get_unchecked(..self.len as usize)) }
+            }
+
+            #[inline(always)]
+            pub fn push(&mut self, value: T) {
+                let index = self.len as usize;
+                unsafe { self.data.get_unchecked_mut(index).write(value) };
+                self.len += 1;
+            }
+
+            #[inline(always)]
+            pub fn pop(&mut self) -> Option<T> {
+                if self.len > 0 {
+                    self.len -= 1;
+                    Some(unsafe { self.data.get_unchecked(self.len as usize).assume_init() })
+                } else {
+                    None
+                }
+            }
+
+            #[inline(always)]
+            pub const fn len(&self) -> usize {
+                self.len as usize
+            }
+
+            #[inline(always)]
+            pub const fn is_empty(&self) -> bool {
+                self.len == 0
+            }
         }
-    }
 
-    #[inline(always)]
-    pub fn as_slice(&self) -> &[T] {
-        unsafe { std::mem::transmute(self.data.get_unchecked(..self.len as usize)) }
-    }
-
-    #[inline(always)]
-    pub fn push(&mut self, value: T) {
-        unsafe { self.data.get_unchecked_mut(self.len as usize).write(value) };
-        self.len += 1;
-    }
-
-    #[inline(always)]
-    pub fn pop(&mut self) -> Option<T> {
-        if self.len > 0 {
-            self.len -= 1;
-            Some(unsafe { self.data.get_unchecked(self.len as usize).assume_init() })
-        } else {
-            None
-        }
-    }
-}
-
-impl<T: Copy, const N: usize> Default for ArrayVec<T, N> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: Copy, const N: usize> FromIterator<T> for ArrayVec<T, N> {
-    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let mut vec = Self::new();
-
-        for value in iter {
-            vec.push(value);
+        impl<T: Copy, const CAPACITY: usize> Default for ArrayVec<T, CAPACITY, $t> {
+            fn default() -> Self {
+                Self::new()
+            }
         }
 
-        vec
-    }
+        impl<T: Copy, const CAPACITY: usize> FromIterator<T> for ArrayVec<T, CAPACITY, $t> {
+            fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+                let mut vec = Self::new();
+
+                for value in iter {
+                    vec.push(value);
+                }
+
+                vec
+            }
+        }
+
+        impl<T: Copy, const CAPACITY: usize> Index<usize> for ArrayVec<T, CAPACITY, $t> {
+            type Output = T;
+
+            fn index(&self, index: usize) -> &Self::Output {
+                unsafe { self.data[index].assume_init_ref() }
+            }
+        }
+    )+ };
 }
+
+arrayvec_impl!(u8, u16, u32, u64, usize);
