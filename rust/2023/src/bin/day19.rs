@@ -37,7 +37,7 @@ struct Range {
     end: u16,
 }
 
-const KEY_VALUES: [u16; u8::MAX as usize + 1] = {
+const KEY_VALUES: [Key; u8::MAX as usize + 1] = {
     let mut values = [0; u8::MAX as usize + 1];
     values[b'A' as usize] = 26;
     values[b'R' as usize] = 27;
@@ -45,7 +45,7 @@ const KEY_VALUES: [u16; u8::MAX as usize + 1] = {
     let mut i = b'a';
 
     while i <= b'z' {
-        values[i as usize] = (i - b'a' + 1) as u16;
+        values[i as usize] = (i - b'a' + 1) as Key;
         i += 1;
     }
 
@@ -53,7 +53,7 @@ const KEY_VALUES: [u16; u8::MAX as usize + 1] = {
 };
 
 #[inline(always)]
-const fn key_from_bytes(bytes: &[u8]) -> u16 {
+const fn key_from_bytes(bytes: &[u8]) -> Key {
     let mut key = KEY_VALUES[bytes[0] as usize];
     let mut i = 1;
 
@@ -65,14 +65,16 @@ const fn key_from_bytes(bytes: &[u8]) -> u16 {
     key
 }
 
-const KEY_A: u16 = key_from_bytes(b"A");
-const KEY_R: u16 = key_from_bytes(b"R");
-const KEY_IN: u16 = key_from_bytes(b"in");
+const KEY_A: Key = key_from_bytes(b"A");
+const KEY_R: Key = key_from_bytes(b"R");
+const KEY_IN: Key = key_from_bytes(b"in");
 const KEY_MAX: usize = key_from_bytes(b"zzz") as usize;
 
-type Cache = KeyMap<u16, KEY_MAX>;
-type SourceIndex = KeyMap<usize, KEY_MAX>;
-type IdVec = ArrayVec<u16, 4>;
+type Key = u16;
+type Id = u16;
+type Cache = KeyMap<Key, Id, KEY_MAX>;
+type SourceIndex = KeyMap<Key, usize, KEY_MAX>;
+type IdVec = ArrayVec<Id, 4, u8>;
 
 #[derive(Clone, Copy)]
 #[repr(C, align(16))]
@@ -83,7 +85,7 @@ enum Node {
         left: Component,
         right: u16,
         greater: bool,
-        branch: u16,
+        branch: Id,
     },
     Parent(IdVec),
 }
@@ -91,7 +93,7 @@ enum Node {
 #[derive(Clone)]
 struct Workflow {
     arena: Vec<Node>,
-    in_id: u16,
+    in_id: Id,
 }
 
 impl Workflow {
@@ -104,14 +106,14 @@ impl Workflow {
     }
 
     #[inline(always)]
-    fn push(&mut self, workflow: Node) -> u16 {
-        let id = self.arena.len() as u16;
+    fn push(&mut self, workflow: Node) -> Id {
+        let id = self.arena.len() as Id;
         self.arena.push(workflow);
         id
     }
 
     #[inline(always)]
-    fn get(&self, id: u16) -> &Node {
+    fn get(&self, id: Id) -> &Node {
         &self.arena[id as usize]
     }
 
@@ -162,11 +164,13 @@ impl Workflow {
     fn combinations(&self) -> u64 {
         #[derive(Clone, Copy)]
         struct Frame {
-            node_id: u16,
+            node_id: Id,
             ranges: ComponentMap<Range>,
         }
 
-        let mut stack = ArrayVec::<_, 16>::new();
+        type Stack = ArrayVec<Frame, 16, u8>;
+
+        let mut stack = Stack::new();
         let mut total = 0;
 
         stack.push(Frame {
@@ -310,7 +314,7 @@ impl<'a> WorkflowParser<'a> {
         Ok(workflow)
     }
 
-    fn root(&self, key: u16, cache: &mut Cache, workflow: &mut Workflow) -> Option<u16> {
+    fn root(&self, key: Key, cache: &mut Cache, workflow: &mut Workflow) -> Option<Id> {
         if cache.contains_key(key) {
             return cache.get(key).copied();
         }
@@ -327,7 +331,7 @@ impl<'a> WorkflowParser<'a> {
         Some(id)
     }
 
-    fn child(&self, i: &mut usize, cache: &mut Cache, workflow: &mut Workflow) -> Option<u16> {
+    fn child(&self, i: &mut usize, cache: &mut Cache, workflow: &mut Workflow) -> Option<Id> {
         let (a, b) = (self.bytes[*i], self.bytes[*i + 1]);
 
         match (a, b) {
@@ -378,7 +382,7 @@ impl<'a> WorkflowParser<'a> {
     }
 
     #[inline(always)]
-    fn key(&self, i: &mut usize) -> Option<u16> {
+    fn key(&self, i: &mut usize) -> Option<Key> {
         let mut key = 0;
 
         loop {
