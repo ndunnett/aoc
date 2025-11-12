@@ -6,3 +6,6 @@ pub use arrayvec::*;
 
 pub mod keymap;
 pub use keymap::*;
+
+pub mod point;
+pub use point::*;
