@@ -20,7 +20,7 @@ macro_rules! arrayvec_impl {
 
             #[inline(always)]
             pub fn as_slice(&self) -> &[T] {
-                unsafe { std::mem::transmute(self.data.get_unchecked(..self.len as usize)) }
+                unsafe { std::slice::from_raw_parts(self.data.as_ptr() as *const T, self.len as usize) }
             }
 
             #[inline(always)]
@@ -48,6 +48,11 @@ macro_rules! arrayvec_impl {
             #[inline(always)]
             pub const fn is_empty(&self) -> bool {
                 self.len == 0
+            }
+
+            #[inline(always)]
+            pub fn iter(&self) -> impl Iterator<Item = &T> {
+                self.as_slice().iter()
             }
         }
 
