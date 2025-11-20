@@ -1,4 +1,7 @@
-use std::{mem::MaybeUninit, ops::Index};
+use std::{
+    mem::MaybeUninit,
+    ops::{Index, IndexMut},
+};
 
 /// Work in progress minimal implementation of a high performance vector. Very unsafe, no bounds checks.
 #[derive(Clone, Copy)]
@@ -79,6 +82,12 @@ macro_rules! arrayvec_impl {
 
             fn index(&self, index: usize) -> &Self::Output {
                 unsafe { self.data[index].assume_init_ref() }
+            }
+        }
+
+        impl<T: Copy, const CAPACITY: usize> IndexMut<usize> for ArrayVec<T, CAPACITY, $t> {
+            fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+                unsafe { self.data[index].assume_init_mut() }
             }
         }
     )+ };
