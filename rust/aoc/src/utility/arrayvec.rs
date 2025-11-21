@@ -27,6 +27,13 @@ macro_rules! arrayvec_impl {
             }
 
             #[inline(always)]
+            pub fn as_mut_slice(&mut self) -> &mut [T] {
+                unsafe {
+                    std::slice::from_raw_parts_mut(self.data.as_mut_ptr() as *mut T, self.len as usize)
+                }
+            }
+
+            #[inline(always)]
             pub fn push(&mut self, value: T) {
                 let index = self.len as usize;
                 unsafe { self.data.get_unchecked_mut(index).write(value) };
@@ -56,6 +63,11 @@ macro_rules! arrayvec_impl {
             #[inline(always)]
             pub fn iter(&self) -> impl Iterator<Item = &T> {
                 self.as_slice().iter()
+            }
+
+            #[inline(always)]
+            pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+                self.as_mut_slice().iter_mut()
             }
         }
 
