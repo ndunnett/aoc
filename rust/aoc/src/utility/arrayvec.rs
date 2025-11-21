@@ -4,7 +4,7 @@ use std::{
 };
 
 /// Work in progress minimal implementation of a high performance vector. Very unsafe, no bounds checks.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct ArrayVec<T: Copy, const CAPACITY: usize, LenType: Copy> {
     data: [MaybeUninit<T>; CAPACITY],
     len: LenType,
