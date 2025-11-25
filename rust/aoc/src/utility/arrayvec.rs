@@ -128,6 +128,14 @@ macro_rules! arrayvec_impl {
                 unsafe { self.data[index].assume_init_mut() }
             }
         }
+
+        impl<T: Copy, const CAPACITY: usize> Index<std::ops::Range<usize>> for ArrayVec<T, CAPACITY, $t> {
+            type Output = [T];
+
+            fn index(&self, index: std::ops::Range<usize>) -> &Self::Output {
+                &self.as_slice()[index]
+            }
+        }
     )+ };
 }
 
