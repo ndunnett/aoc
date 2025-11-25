@@ -4,7 +4,7 @@ use std::{
 };
 
 /// Work in progress minimal implementation of a high performance vector. Very unsafe, no bounds checks.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct ArrayVec<T: Copy, const CAPACITY: usize, LenType: Copy> {
     data: [MaybeUninit<T>; CAPACITY],
     len: LenType,
@@ -69,6 +69,32 @@ macro_rules! arrayvec_impl {
             pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
                 self.as_mut_slice().iter_mut()
             }
+
+            #[inline(always)]
+            pub fn get(&mut self, index: usize) -> Option<&T> {
+                if index < self.len as usize {
+                    Some(&self[index])
+                } else {
+                    None
+                }
+            }
+
+            #[inline(always)]
+            pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+                if index < self.len as usize {
+                    Some(&mut self[index])
+                } else {
+                    None
+                }
+            }
+        }
+
+        impl<T: Copy + std::fmt::Debug, const CAPACITY: usize> std::fmt::Debug
+            for ArrayVec<T, CAPACITY, $t>
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.debug_list().entries(self.iter()).finish()
+            }
         }
 
         impl<T: Copy, const CAPACITY: usize> Default for ArrayVec<T, CAPACITY, $t> {
@@ -106,3 +132,25 @@ macro_rules! arrayvec_impl {
 }
 
 arrayvec_impl!(u8, u16, u32, u64, usize);
+
+#[macro_export]
+macro_rules! arrayvec {
+    ( $t:expr => $( $x:expr ),* ) => {
+        {
+            let mut vec = $t;
+            $(vec.push($x);)*
+            vec
+        }
+    };
+    ( $t:expr => $x:expr; $count:expr ) => {
+        {
+            let mut vec = $t;
+
+            for _ in 0..$count {
+                vec.push($x);
+            }
+
+            vec
+        }
+    };
+}
