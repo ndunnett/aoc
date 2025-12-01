@@ -1,3 +1,5 @@
+#![feature(const_trait_impl)]
+#![feature(ptr_as_ref_unchecked)]
 #![feature(generic_const_exprs)]
 #![allow(incomplete_features)]
 
