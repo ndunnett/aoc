@@ -31,17 +31,16 @@ macro_rules! usizeable_impl {
 usizeable_impl!(u8, u16, u32, u64, usize);
 
 /// Work in progress minimal implementation of a high performance vector.
-#[derive(Clone, Copy)]
-pub struct MicroVec<T: Copy, const CAPACITY: usize, LenType: const Usizeable> {
+pub struct MicroVec<T, const CAPACITY: usize, LenType: const Usizeable> {
     data: [MaybeUninit<T>; CAPACITY],
     len: LenType,
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, LenType> {
+impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, LenType> {
     #[inline(always)]
     pub const fn new() -> Self {
         Self {
-            data: [MaybeUninit::uninit(); CAPACITY],
+            data: [const { MaybeUninit::uninit() }; CAPACITY],
             len: LenType::zero(),
         }
     }
@@ -182,7 +181,7 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPAC
     }
 }
 
-impl<T: Copy + std::fmt::Debug, const CAPACITY: usize, LenType: const Usizeable> std::fmt::Debug
+impl<T: std::fmt::Debug, const CAPACITY: usize, LenType: const Usizeable> std::fmt::Debug
     for MicroVec<T, CAPACITY, LenType>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -190,7 +189,7 @@ impl<T: Copy + std::fmt::Debug, const CAPACITY: usize, LenType: const Usizeable>
     }
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Default
+impl<T, const CAPACITY: usize, LenType: const Usizeable> Default
     for MicroVec<T, CAPACITY, LenType>
 {
     #[inline(always)]
@@ -199,7 +198,7 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Default
     }
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> FromIterator<T>
+impl<T, const CAPACITY: usize, LenType: const Usizeable> FromIterator<T>
     for MicroVec<T, CAPACITY, LenType>
 {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
@@ -213,7 +212,7 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> FromIterator<T>
     }
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Index<usize>
+impl<T, const CAPACITY: usize, LenType: const Usizeable> Index<usize>
     for MicroVec<T, CAPACITY, LenType>
 {
     type Output = T;
@@ -223,7 +222,7 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Index<usize>
     }
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> IndexMut<usize>
+impl<T, const CAPACITY: usize, LenType: const Usizeable> IndexMut<usize>
     for MicroVec<T, CAPACITY, LenType>
 {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
@@ -231,7 +230,7 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> IndexMut<usize>
     }
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Index<std::ops::Range<usize>>
+impl<T, const CAPACITY: usize, LenType: const Usizeable> Index<std::ops::Range<usize>>
     for MicroVec<T, CAPACITY, LenType>
 {
     type Output = [T];
@@ -245,7 +244,7 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Index<std::ops::R
     }
 }
 
-impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> IndexMut<std::ops::Range<usize>>
+impl<T, const CAPACITY: usize, LenType: const Usizeable> IndexMut<std::ops::Range<usize>>
     for MicroVec<T, CAPACITY, LenType>
 {
     fn index_mut(&mut self, index: std::ops::Range<usize>) -> &mut Self::Output {
@@ -260,6 +259,32 @@ impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> IndexMut<std::ops
             panic!("index out of bounds");
         }
     }
+}
+
+impl<T: Clone, const CAPACITY: usize, LenType: const Usizeable> Clone
+    for MicroVec<T, CAPACITY, LenType>
+{
+    fn clone(&self) -> Self {
+        let mut cloned = Self::new();
+
+        unsafe {
+            if std::mem::needs_drop::<T>() {
+                for i in 0..self.len() {
+                    cloned.mut_ptr_to(i).write(self.get_unchecked(i).clone());
+                }
+            } else {
+                std::ptr::copy_nonoverlapping(self.as_ptr(), cloned.as_mut_ptr(), self.len());
+            }
+        }
+
+        cloned.len = self.len;
+        cloned
+    }
+}
+
+impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Copy
+    for MicroVec<T, CAPACITY, LenType>
+{
 }
 
 #[macro_export]
