@@ -1,5 +1,7 @@
+cargo-features = ["profile-rustflags"]
+
 [workspace]
-members = ["aoc_core", "aoc", "2022", "2023", "2024"]
+members = ["aoc_core", "aoc", "2022", "2023", "2024", "2025"]
 default-members = ["aoc_core"]
 resolver = "2"
 
@@ -34,3 +36,4 @@ lto = "fat"
 opt-level = 3
 strip = true
 panic = "abort"
+rustflags = ["-C", "target-cpu=native"]
