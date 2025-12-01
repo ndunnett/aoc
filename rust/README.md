@@ -1,6 +1,13 @@
 # Advent of Code: Rust
 
 <details open>
+<summary>2025 Solutions</summary>
+
+* [Day 1: Secret Entrance](./2025/src/bin/day01.rs)
+
+</details>
+
+<details>
 <summary>2024 Solutions</summary>
 
 * [Day 1: Historian Hysteria](./2024/src/bin/day01.rs)
@@ -50,6 +57,10 @@
 * [Day 14: Parabolic Reflector Dish](./2023/src/bin/day14.rs)
 * [Day 15: Lens Library](./2023/src/bin/day15.rs)
 * [Day 16: The Floor Will Be Lava](./2023/src/bin/day16.rs)
+* [Day 17: Clumsy Crucible](./2023/src/bin/day17.rs)
+* [Day 18: Lavaduct Lagoon](./2023/src/bin/day18.rs)
+* [Day 19: Aplenty](./2023/src/bin/day19.rs)
+* [Day 20: Pulse Propagation](./2023/src/bin/day20.rs)
 
 </details>
 
