@@ -30,7 +30,15 @@ macro_rules! usizeable_impl {
 
 usizeable_impl!(u8, u16, u32, u64, usize);
 
-/// Work in progress minimal implementation of a high performance vector.
+pub struct IntoIter<T, const CAPACITY: usize, LenType: const Usizeable> {
+    vec: MicroVec<T, CAPACITY, LenType>,
+    index: usize,
+}
+
+/// Work in progress minimal implementation of a high performance heapless vector.
+///
+/// Should not be used if you rely on elements being dropped, due to `MicroVec<T, ...>` implementing `Copy` where `T: Copy`,
+/// and specialised `Drop` implementations being forbidden, `Drop` will never be called for `T`.
 pub struct MicroVec<T, const CAPACITY: usize, LenType: const Usizeable> {
     data: [MaybeUninit<T>; CAPACITY],
     len: LenType,
@@ -66,16 +74,6 @@ impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, L
     }
 
     #[inline(always)]
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.as_slice().iter()
-    }
-
-    #[inline(always)]
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
-        self.as_mut_slice().iter_mut()
-    }
-
-    #[inline(always)]
     pub const fn len(&self) -> usize {
         self.len.as_usize()
     }
@@ -96,6 +94,11 @@ impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, L
     }
 
     #[inline(always)]
+    pub const fn clear(&mut self) {
+        self.len = LenType::zero();
+    }
+
+    #[inline(always)]
     pub const fn push(&mut self, value: T) {
         if self.is_full() {
             panic!("exceeded capacity")
@@ -107,11 +110,36 @@ impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, L
     }
 
     #[inline(always)]
-    pub const fn pop(&mut self) -> Option<T> {
-        if self.is_empty() {
-            None
+    pub const fn insert(&mut self, index: usize, value: T) {
+        if self.is_full() || index > self.len() {
+            panic!("index out of bounds")
         } else {
+            unsafe {
+                self.insert_unchecked(index, value);
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub const fn pop(&mut self) -> Option<T> {
+        if !self.is_empty() {
             Some(unsafe { self.pop_unchecked() })
+        } else {
+            None
+        }
+    }
+
+    #[inline(always)]
+    pub const fn remove(&mut self, index: usize) -> T {
+        self.try_remove(index).expect("no element to remove")
+    }
+
+    #[inline(always)]
+    pub const fn try_remove(&mut self, index: usize) -> Option<T> {
+        if !self.is_empty() && index < self.len() {
+            Some(unsafe { self.remove_unchecked(index) })
+        } else {
+            None
         }
     }
 
@@ -151,11 +179,24 @@ impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, L
     /// no bounds check, can exceed capacity
     #[inline(always)]
     pub const unsafe fn push_unchecked(&mut self, value: T) {
-        unsafe {
-            self.mut_ptr_to(self.len()).write(value);
-        }
-
+        unsafe { self.paste(self.len(), value) };
         self.len.increment();
+    }
+
+    /// # Safety
+    /// no bounds check, can exceed capacity
+    #[inline(always)]
+    pub const unsafe fn insert_unchecked(&mut self, index: usize, value: T) {
+        unsafe {
+            std::ptr::copy(
+                self.ptr_to(index),
+                self.mut_ptr_to(index).add(1),
+                self.len() - index,
+            );
+
+            self.paste(index, value);
+            self.len.increment();
+        }
     }
 
     /// # Safety
@@ -163,7 +204,24 @@ impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, L
     #[inline(always)]
     pub const unsafe fn pop_unchecked(&mut self) -> T {
         self.len.decrement();
-        unsafe { self.mut_ptr_to(self.len()).read() }
+        unsafe { self.yoink(self.len()) }
+    }
+
+    /// # Safety
+    /// no bounds check, can remove from an empty vec
+    #[inline(always)]
+    pub const unsafe fn remove_unchecked(&mut self, index: usize) -> T {
+        let item = unsafe { self.yoink(index) };
+
+        unsafe {
+            let src = self.ptr_to(index).add(1);
+            let len = self.len() - index;
+            let dst = self.mut_ptr_to(index);
+            std::ptr::copy(src, dst, len);
+            self.len.decrement();
+        }
+
+        item
     }
 
     /// # Safety
@@ -179,13 +237,19 @@ impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, L
     pub const unsafe fn get_mut_unchecked(&mut self, index: usize) -> &mut T {
         unsafe { self.mut_ptr_to(index).as_mut_unchecked() }
     }
-}
 
-impl<T: std::fmt::Debug, const CAPACITY: usize, LenType: const Usizeable> std::fmt::Debug
-    for MicroVec<T, CAPACITY, LenType>
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_list().entries(self.iter()).finish()
+    /// # Safety
+    /// no bounds check, doesn't rearrange elements, doesn't manage length
+    #[inline(always)]
+    const unsafe fn yoink(&mut self, index: usize) -> T {
+        unsafe { self.ptr_to(index).read() }
+    }
+
+    /// # Safety
+    /// no bounds check, doesn't rearrange elements, doesn't manage length, will blindly overwrite data
+    #[inline(always)]
+    const unsafe fn paste(&mut self, index: usize, value: T) {
+        unsafe { self.mut_ptr_to(index).write(value) }
     }
 }
 
@@ -285,6 +349,145 @@ impl<T: Clone, const CAPACITY: usize, LenType: const Usizeable> Clone
 impl<T: Copy, const CAPACITY: usize, LenType: const Usizeable> Copy
     for MicroVec<T, CAPACITY, LenType>
 {
+}
+
+impl<T, const CAPACITY: usize, LenType: const Usizeable> IntoIterator
+    for MicroVec<T, CAPACITY, LenType>
+{
+    type Item = T;
+    type IntoIter = IntoIter<T, CAPACITY, LenType>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            vec: self,
+            index: 0,
+        }
+    }
+}
+
+impl<T, const CAPACITY: usize, LenType: const Usizeable> Iterator
+    for IntoIter<T, CAPACITY, LenType>
+{
+    type Item = T;
+
+    #[inline(always)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact = self.vec.len();
+        (exact, Some(exact))
+    }
+
+    #[inline(always)]
+    fn count(self) -> usize
+    where
+        Self: Sized,
+    {
+        self.vec.len()
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.vec.len() {
+            let item = unsafe { self.vec.yoink(self.index) };
+            self.index += 1;
+            Some(item)
+        } else {
+            None
+        }
+    }
+}
+
+// `Deref` into slices
+
+impl<T, const CAPACITY: usize, LenType: const Usizeable> std::ops::Deref
+    for MicroVec<T, CAPACITY, LenType>
+{
+    type Target = [T];
+
+    #[inline(always)]
+    fn deref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T, const CAPACITY: usize, LenType: const Usizeable> std::ops::DerefMut
+    for MicroVec<T, CAPACITY, LenType>
+{
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
+// Blanket trait implementations, defer actual implementation to std::slice by dereferencing
+
+impl<'a, T, const CAPACITY: usize, LenType: const Usizeable> IntoIterator
+    for &'a MicroVec<T, CAPACITY, LenType>
+{
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T, const CAPACITY: usize, LenType: const Usizeable> IntoIterator
+    for &'a mut MicroVec<T, CAPACITY, LenType>
+{
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
+impl<T: std::fmt::Debug, const CAPACITY: usize, LenType: const Usizeable> std::fmt::Debug
+    for MicroVec<T, CAPACITY, LenType>
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        (**self).fmt(f)
+    }
+}
+
+impl<T: std::hash::Hash, const CAPACITY: usize, LenType: const Usizeable> std::hash::Hash
+    for MicroVec<T, CAPACITY, LenType>
+{
+    #[inline(always)]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (**self).hash(state)
+    }
+}
+
+impl<T: PartialEq, const CAPACITY: usize, LenType: const Usizeable>
+    PartialEq<MicroVec<T, CAPACITY, LenType>> for MicroVec<T, CAPACITY, LenType>
+{
+    #[inline(always)]
+    fn eq(&self, other: &MicroVec<T, CAPACITY, LenType>) -> bool {
+        (**self).eq(&**other)
+    }
+}
+
+impl<T: PartialOrd, const CAPACITY: usize, LenType: const Usizeable>
+    PartialOrd<MicroVec<T, CAPACITY, LenType>> for MicroVec<T, CAPACITY, LenType>
+{
+    #[inline(always)]
+    fn partial_cmp(&self, other: &MicroVec<T, CAPACITY, LenType>) -> Option<std::cmp::Ordering> {
+        (**self).partial_cmp(&**other)
+    }
+}
+
+impl<T: Eq, const CAPACITY: usize, LenType: const Usizeable> Eq for MicroVec<T, CAPACITY, LenType> {}
+
+impl<T: Ord, const CAPACITY: usize, LenType: const Usizeable> Ord
+    for MicroVec<T, CAPACITY, LenType>
+{
+    #[inline(always)]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (**self).cmp(&**other)
+    }
 }
 
 #[macro_export]
