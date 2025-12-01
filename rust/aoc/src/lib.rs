@@ -21,7 +21,7 @@ pub type Anyhow<T> = anyhow::Result<T>;
 
 pub mod utility;
 pub use crate::utility::{
-    ArrayVec, GenericPoint, KeyMap, NumberParser, NumberParserSigned, arrayvec,
+    GenericPoint, KeyMap, MicroVec, NumberParser, NumberParserSigned, microvec,
 };
 
 pub trait Solver
@@ -94,7 +94,9 @@ pub mod __runner {
 ///
 /// Utility library imports:
 /// ```
-/// pub use crate::utility::{ArrayVec, GenericPoint, KeyMap, NumberParser, NumberParserSigned, arrayvec};
+/// pub use crate::utility::{
+///     GenericPoint, KeyMap, MicroVec, NumberParser, NumberParserSigned, microvec,
+/// };
 /// ```
 #[macro_export]
 macro_rules! solution {

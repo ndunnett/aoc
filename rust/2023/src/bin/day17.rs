@@ -78,7 +78,7 @@ impl From<Vec<Vec<u8>>> for HeatMap {
     }
 }
 
-type BucketVec = ArrayVec<State, 296, usize>;
+type BucketVec = MicroVec<State, 296, usize>;
 
 #[derive(Clone, Copy)]
 struct BucketQueue<const BUCKETS: usize> {

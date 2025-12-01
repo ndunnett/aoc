@@ -3,16 +3,16 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-/// Work in progress minimal implementation of a high performance vector. Very unsafe, no bounds checks.
+/// Work in progress minimal implementation of a high performance vector.
 #[derive(Clone, Copy)]
-pub struct ArrayVec<T: Copy, const CAPACITY: usize, LenType: Copy> {
+pub struct MicroVec<T: Copy, const CAPACITY: usize, LenType: Copy> {
     data: [MaybeUninit<T>; CAPACITY],
     len: LenType,
 }
 
-macro_rules! arrayvec_impl {
+macro_rules! microvec_impl {
     ($($t:ty),+) => { $(
-        impl<T: Copy, const CAPACITY: usize> ArrayVec<T, CAPACITY, $t> {
+        impl<T: Copy, const CAPACITY: usize> MicroVec<T, CAPACITY, $t> {
             #[inline(always)]
             pub const fn new() -> Self {
                 Self {
@@ -90,20 +90,20 @@ macro_rules! arrayvec_impl {
         }
 
         impl<T: Copy + std::fmt::Debug, const CAPACITY: usize> std::fmt::Debug
-            for ArrayVec<T, CAPACITY, $t>
+            for MicroVec<T, CAPACITY, $t>
         {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 f.debug_list().entries(self.iter()).finish()
             }
         }
 
-        impl<T: Copy, const CAPACITY: usize> Default for ArrayVec<T, CAPACITY, $t> {
+        impl<T: Copy, const CAPACITY: usize> Default for MicroVec<T, CAPACITY, $t> {
             fn default() -> Self {
                 Self::new()
             }
         }
 
-        impl<T: Copy, const CAPACITY: usize> FromIterator<T> for ArrayVec<T, CAPACITY, $t> {
+        impl<T: Copy, const CAPACITY: usize> FromIterator<T> for MicroVec<T, CAPACITY, $t> {
             fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
                 let mut vec = Self::new();
 
@@ -115,7 +115,7 @@ macro_rules! arrayvec_impl {
             }
         }
 
-        impl<T: Copy, const CAPACITY: usize> Index<usize> for ArrayVec<T, CAPACITY, $t> {
+        impl<T: Copy, const CAPACITY: usize> Index<usize> for MicroVec<T, CAPACITY, $t> {
             type Output = T;
 
             fn index(&self, index: usize) -> &Self::Output {
@@ -123,13 +123,13 @@ macro_rules! arrayvec_impl {
             }
         }
 
-        impl<T: Copy, const CAPACITY: usize> IndexMut<usize> for ArrayVec<T, CAPACITY, $t> {
+        impl<T: Copy, const CAPACITY: usize> IndexMut<usize> for MicroVec<T, CAPACITY, $t> {
             fn index_mut(&mut self, index: usize) -> &mut Self::Output {
                 unsafe { self.data[index].assume_init_mut() }
             }
         }
 
-        impl<T: Copy, const CAPACITY: usize> Index<std::ops::Range<usize>> for ArrayVec<T, CAPACITY, $t> {
+        impl<T: Copy, const CAPACITY: usize> Index<std::ops::Range<usize>> for MicroVec<T, CAPACITY, $t> {
             type Output = [T];
 
             fn index(&self, index: std::ops::Range<usize>) -> &Self::Output {
@@ -139,10 +139,10 @@ macro_rules! arrayvec_impl {
     )+ };
 }
 
-arrayvec_impl!(u8, u16, u32, u64, usize);
+microvec_impl!(u8, u16, u32, u64, usize);
 
 #[macro_export]
-macro_rules! arrayvec {
+macro_rules! microvec {
     ( $t:expr => $( $x:expr ),* ) => {
         {
             let mut vec = $t;

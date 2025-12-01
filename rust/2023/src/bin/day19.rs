@@ -74,7 +74,7 @@ type Key = u16;
 type Id = u16;
 type Cache = KeyMap<Key, Id, KEY_MAX>;
 type SourceIndex = KeyMap<Key, usize, KEY_MAX>;
-type IdVec = ArrayVec<Id, 4, u8>;
+type IdVec = MicroVec<Id, 4, u8>;
 
 #[derive(Clone, Copy)]
 #[repr(C, align(16))]
@@ -168,7 +168,7 @@ impl Workflow {
             ranges: ComponentMap<Range>,
         }
 
-        type Stack = ArrayVec<Frame, 16, u8>;
+        type Stack = MicroVec<Frame, 16, u8>;
 
         let mut stack = Stack::new();
         let mut total = 0;

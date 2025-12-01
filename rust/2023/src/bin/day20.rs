@@ -50,7 +50,7 @@ enum Pulse {
 }
 
 type Id = u16;
-type IdVec = ArrayVec<Id, 8, u8>;
+type IdVec = MicroVec<Id, 8, u8>;
 
 #[derive(Clone, Copy)]
 struct Message {
