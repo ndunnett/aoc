@@ -1,4 +1,4 @@
-/// LUT for powers of 10, where POW10[n] = n^10
+/// LUT for powers of 10, where POW10[n] = 10^n
 const POW10: [u64; 20] = {
     let mut pow10 = [1u64; 20];
     let mut i = 1;
