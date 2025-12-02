@@ -1,62 +1,42 @@
-#[derive(Debug, Clone)]
-struct IdRange {
-    start: isize,
-    end: isize,
-}
-
 #[derive(Clone)]
 struct Solution {
-    ranges: Vec<IdRange>,
+    ranges: Vec<(u64, u64)>,
 }
 
 impl Solution {
-    fn solve(id: isize, digits: u32) -> bool {
-        let base = 10_isize.pow(digits);
+    #[inline(always)]
+    fn solve(mut id: u64, digits: u32) -> bool {
+        let base = 10_u64.pow(digits);
         let pattern = id % base;
 
         if pattern == 0 {
             return false;
         }
 
-        let mut rem = id;
-
-        while rem >= pattern {
-            rem -= pattern;
-
-            if rem >= base {
-                rem /= base;
-
-                if rem % base != pattern {
-                    break;
-                }
-            } else {
-                break;
+        while id >= base {
+            if id % base != pattern {
+                return false;
             }
+
+            id /= base;
         }
 
-        if rem == 0 {
-            println!("{id} -> {base} -> {pattern}");
-        }
-
-        rem == 0
+        id == pattern
     }
 }
 
 impl Solver for Solution {
     fn new(input: &str) -> Anyhow<Self> {
         Ok(Self {
-            ranges: NumberParser::<isize>::from(input)
-                .tuples()
-                .map(|(start, end)| IdRange { start, end })
-                .collect(),
+            ranges: NumberParser::<u64>::from(input).tuples().collect(),
         })
     }
 
     fn part1(&mut self) -> Anyhow<impl fmt::Display> {
         let mut count = 0;
 
-        for range in &self.ranges {
-            for id in range.start..=range.end {
+        for &(first, last) in &self.ranges {
+            for id in first..=last {
                 let digits = id.ilog10() + 1;
 
                 if digits % 2 == 0 && Self::solve(id, digits / 2) {
@@ -71,12 +51,12 @@ impl Solver for Solution {
     fn part2(&mut self) -> Anyhow<impl fmt::Display> {
         let mut count = 0;
 
-        for range in &self.ranges {
-            for id in range.start..=range.end {
-                let total = id.ilog10() + 1;
+        for &(first, last) in &self.ranges {
+            for id in first..=last {
+                let digits = id.ilog10() + 1;
 
-                for digits in 1..=id.ilog10().div_ceil(2) {
-                    if total % digits == 0 && Self::solve(id, digits) {
+                for d in 1..=((digits) >> 1) {
+                    if digits % d == 0 && Self::solve(id, d) {
                         count += id;
                         break;
                     }
