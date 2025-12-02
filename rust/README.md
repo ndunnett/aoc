@@ -4,6 +4,7 @@
 <summary>2025 Solutions</summary>
 
 * [Day 1: Secret Entrance](./2025/src/bin/day01.rs)
+* [Day 2: Gift Shop](./2025/src/bin/day02.rs)
 
 </details>
 
