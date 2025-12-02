@@ -275,6 +275,50 @@ where
     }
 }
 
+impl<T, const CAPACITY: usize, LenType: const Usizeable> MicroVec<T, CAPACITY, LenType>
+where
+    LenTypeBigEnough<CAPACITY, LenType>: True,
+    for<'a> &'a T: PartialEq,
+{
+    pub fn dedup(&mut self) {
+        if self.len() < 2 {
+            return;
+        }
+
+        let mut start = 1;
+
+        loop {
+            while start < self.len() {
+                if unsafe { self.get_unchecked(start) == self.get_unchecked(start - 1) } {
+                    break;
+                }
+
+                start += 1;
+            }
+
+            if start == self.len() {
+                return;
+            }
+
+            let mut end = start + 1;
+
+            while end < self.len() {
+                if unsafe { self.get_unchecked(end) != self.get_unchecked(end - 1) } {
+                    break;
+                }
+
+                end += 1;
+            }
+
+            unsafe {
+                std::ptr::copy(self.ptr_to(end), self.mut_ptr_to(start), self.len() - end);
+            }
+
+            self.len = LenType::from_usize(self.len() - end + start);
+        }
+    }
+}
+
 /// Ensures that the given `MicroVec` type is large enough for a given array at compile time.
 pub struct VecBigEnough<const VEC_SIZE: usize, const ARRAY_SIZE: usize>;
 
