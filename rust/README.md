@@ -6,6 +6,7 @@
 * [Day 1: Secret Entrance](./2025/src/bin/day01.rs)
 * [Day 2: Gift Shop](./2025/src/bin/day02.rs)
 * [Day 3: Lobby](./2025/src/bin/day03.rs)
+* [Day 4: Printing Department](./2025/src/bin/day04.rs)
 
 </details>
 
