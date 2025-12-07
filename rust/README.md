@@ -8,6 +8,7 @@
 * [Day 3: Lobby](./2025/src/bin/day03.rs)
 * [Day 4: Printing Department](./2025/src/bin/day04.rs)
 * [Day 5: Cafeteria](./2025/src/bin/day05.rs)
+* [Day 6: Trash Compactor](./2025/src/bin/day06.rs)
 
 </details>
 
