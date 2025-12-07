@@ -48,10 +48,10 @@ impl Solver for Solution {
 
         // Do the bulk with SIMD
         while i + LANE_SIZE <= operator_line_start {
-            // Safety: `i` can never overrun the end of the `bytes` slice as long as the line lengths are > `LANE_SIZE`
-            let lane = unsafe { *(bytes.as_ptr().add(i) as *const Simd<u8, LANE_SIZE>) };
+            let lane = Simd::from_slice(&bytes[i..i + LANE_SIZE]);
             let values = lane - ASCII_ZEROES;
 
+            // Safety: `i + LANE_SIZE` can never overrun the end of `digits`
             unsafe {
                 std::ptr::copy_nonoverlapping(
                     values.as_array().as_ptr(),
@@ -63,11 +63,14 @@ impl Solver for Solution {
             i += LANE_SIZE;
         }
 
-        // Check the tail with scalar loop
+        // Check the tail with a scalar loop
         while i < operator_line_start {
             // Safety: `i` will never overrun `digits`
             unsafe {
-                digits.as_mut_ptr().add(i).write(bytes[i] - b'0');
+                digits
+                    .as_mut_ptr()
+                    .add(i)
+                    .write(bytes[i].wrapping_sub(b'0'));
             }
 
             i += 1;
@@ -80,11 +83,11 @@ impl Solver for Solution {
 
         // Iterate over each column of operations
         while operator_line_start + column_start + column_len < file_len {
-            // First byte at `operator line + start` is always the operator
+            // Safety: the first byte at `operator line + start` is always the operator
             let operator = match bytes[operator_line_start + column_start] {
                 b'+' => Operator::Add,
                 b'*' => Operator::Mul,
-                _ => unreachable!(),
+                _ => unsafe { std::hint::unreachable_unchecked() },
             };
 
             // Get the width of the column by checking for spaces after the operator
