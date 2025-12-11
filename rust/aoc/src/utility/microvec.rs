@@ -514,8 +514,30 @@ where
     }
 }
 
+impl<T, const CAPACITY: usize, LenType: const Usizeable, I: SliceIndex<[T]>> Index<I>
+    for Box<MicroVec<T, CAPACITY, LenType>>
+where
+    LenTypeBigEnough<CAPACITY, LenType>: True,
+{
+    type Output = I::Output;
+
+    fn index(&self, index: I) -> &Self::Output {
+        &(**self)[index]
+    }
+}
+
 impl<T, const CAPACITY: usize, LenType: const Usizeable, I: SliceIndex<[T]>> IndexMut<I>
     for MicroVec<T, CAPACITY, LenType>
+where
+    LenTypeBigEnough<CAPACITY, LenType>: True,
+{
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        &mut (**self)[index]
+    }
+}
+
+impl<T, const CAPACITY: usize, LenType: const Usizeable, I: SliceIndex<[T]>> IndexMut<I>
+    for Box<MicroVec<T, CAPACITY, LenType>>
 where
     LenTypeBigEnough<CAPACITY, LenType>: True,
 {
@@ -539,7 +561,35 @@ where
 }
 
 impl<'a, T, const CAPACITY: usize, LenType: const Usizeable> IntoIterator
+    for &'a Box<MicroVec<T, CAPACITY, LenType>>
+where
+    LenTypeBigEnough<CAPACITY, LenType>: True,
+{
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, T, const CAPACITY: usize, LenType: const Usizeable> IntoIterator
     for &'a mut MicroVec<T, CAPACITY, LenType>
+where
+    LenTypeBigEnough<CAPACITY, LenType>: True,
+{
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    #[inline(always)]
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
+impl<'a, T, const CAPACITY: usize, LenType: const Usizeable> IntoIterator
+    for &'a mut Box<MicroVec<T, CAPACITY, LenType>>
 where
     LenTypeBigEnough<CAPACITY, LenType>: True,
 {
