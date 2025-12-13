@@ -352,3 +352,15 @@ impl<T> From<(T, T, T)> for GenericPoint<3, T> {
         }
     }
 }
+
+impl<T: Copy> From<GenericPoint<2, T>> for (T, T) {
+    fn from(value: GenericPoint<2, T>) -> Self {
+        (value.x(), value.y())
+    }
+}
+
+impl<T: Copy> From<GenericPoint<3, T>> for (T, T, T) {
+    fn from(value: GenericPoint<3, T>) -> Self {
+        (value.x(), value.y(), value.z())
+    }
+}
