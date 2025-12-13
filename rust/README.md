@@ -10,6 +10,7 @@
 * [Day 5: Cafeteria](./2025/src/bin/day05.rs)
 * [Day 6: Trash Compactor](./2025/src/bin/day06.rs)
 * [Day 7: Laboratories](./2025/src/bin/day07.rs)
+* [Day 8: Playground](./2025/src/bin/day08.rs)
 
 </details>
 
