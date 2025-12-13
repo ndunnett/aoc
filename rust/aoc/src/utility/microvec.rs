@@ -184,6 +184,20 @@ where
     }
 
     /// # Safety
+    /// you must guarantee initialisation for elements up to `len`
+    #[inline(always)]
+    pub const unsafe fn from_raw_parts(data: [MaybeUninit<T>; CAPACITY], len: LenType) -> Self {
+        Self { data, len }
+    }
+
+    /// # Safety
+    /// simply sets `len`, you must guarantee initialisation
+    #[inline(always)]
+    pub const unsafe fn set_len(&mut self, len: LenType) {
+        self.len = len;
+    }
+
+    /// # Safety
     /// no bounds check, can exceed capacity
     #[inline(always)]
     pub const unsafe fn ptr_to(&self, index: usize) -> *const T {
