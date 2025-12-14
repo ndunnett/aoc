@@ -4,7 +4,7 @@
 
 <table>
 <tr><th><div align="center"><a href="/rust">Rust</a></div></th></tr>
-<tr><td>2023 partial, 2024 complete, 2025 in progress</td></tr>
+<tr><td>2023 partial, 2024 complete, 2025 complete</td></tr>
 </table>
 
 <table>
