@@ -13,6 +13,7 @@
 * [Day 8: Playground](./2025/src/bin/day08.rs)
 * [Day 9: Movie Theater](./2025/src/bin/day09.rs)
 * [Day 10: Factory](./2025/src/bin/day10.rs)
+* [Day 11: Reactor](./2025/src/bin/day11.rs)
 
 </details>
 
