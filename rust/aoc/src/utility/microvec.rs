@@ -702,6 +702,7 @@ macro_rules! microvec {
         {
             let mut vec = $t;
             let mut i = 0;
+            assert!(vec.capacity() >= $count);
 
             while i < $count {
                 vec.push($x);
