@@ -8,7 +8,7 @@ ENV AOC_USERNAME="$USERNAME" AOC_REPO="$REPO"
 ARG DEBIAN_FRONTEND=noninteractive
 RUN set -eux; apt update; apt full-upgrade -y; \
     apt install -y ca-certificates libc6-dev pkg-config libssl-dev \
-        mold clang zsh sudo git wget; \
+        mold clang zsh sudo git wget build-essential; \
     apt autoremove -y; apt clean; rm -rf /var/lib/apt/lists/*
 
 # delete default user on new ubuntu images
